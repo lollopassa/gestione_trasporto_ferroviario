@@ -1,34 +1,31 @@
 package domain;
 
 import java.math.BigDecimal;
+import java.util.Objects;
 
 public class Tariffa {
 
-    private String marca, modello;
-    private String nomeClasse;
-    private String depNomeStazione, depCitta, depProvincia;
-    private String arrNomeStazione, arrCitta, arrProvincia;
-    private BigDecimal prezzo;
+    private String marca;
+    private String modello;
+    private String nomeClasse;           // ENUM PRIMA/SECONDA
+    private String depNomeStazione;      // FK -> stazione.nome_stazione
+    private String arrNomeStazione;      // FK -> stazione.nome_stazione
+    private BigDecimal prezzo;           // DECIMAL(8,2) CHECK > 0
 
     public Tariffa() {}
 
     public Tariffa(String marca, String modello, String nomeClasse,
-                   String depNomeStazione, String depCitta, String depProvincia,
-                   String arrNomeStazione, String arrCitta, String arrProvincia,
+                   String depNomeStazione, String arrNomeStazione,
                    BigDecimal prezzo) {
         this.marca = marca;
         this.modello = modello;
         this.nomeClasse = nomeClasse;
         this.depNomeStazione = depNomeStazione;
-        this.depCitta = depCitta;
-        this.depProvincia = depProvincia;
         this.arrNomeStazione = arrNomeStazione;
-        this.arrCitta = arrCitta;
-        this.arrProvincia = arrProvincia;
         this.prezzo = prezzo;
     }
 
-    /* getter & setter */
+    // Getter/Setter
     public String getMarca() { return marca; }
     public void setMarca(String marca) { this.marca = marca; }
 
@@ -39,28 +36,31 @@ public class Tariffa {
     public void setNomeClasse(String nomeClasse) { this.nomeClasse = nomeClasse; }
 
     public String getDepNomeStazione() { return depNomeStazione; }
-    public void setDepNomeStazione(String s) { this.depNomeStazione = s; }
-
-    public String getDepCitta() { return depCitta; }
-    public void setDepCitta(String c) { this.depCitta = c; }
-
-    public String getDepProvincia() { return depProvincia; }
-    public void setDepProvincia(String p) { this.depProvincia = p; }
+    public void setDepNomeStazione(String depNomeStazione) { this.depNomeStazione = depNomeStazione; }
 
     public String getArrNomeStazione() { return arrNomeStazione; }
-    public void setArrNomeStazione(String s) { this.arrNomeStazione = s; }
-
-    public String getArrCitta() { return arrCitta; }
-    public void setArrCitta(String c) { this.arrCitta = c; }
-
-    public String getArrProvincia() { return arrProvincia; }
-    public void setArrProvincia(String p) { this.arrProvincia = p; }
+    public void setArrNomeStazione(String arrNomeStazione) { this.arrNomeStazione = arrNomeStazione; }
 
     public BigDecimal getPrezzo() { return prezzo; }
     public void setPrezzo(BigDecimal prezzo) { this.prezzo = prezzo; }
 
     @Override
-    public String toString() {
-        return nomeClasse + " " + prezzo + "€";
+    public String toString() { return nomeClasse + " " + prezzo + "€"; }
+
+    // (opzionale) equals/hashCode sulla PK
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Tariffa)) return false;
+        Tariffa that = (Tariffa) o;
+        return Objects.equals(marca, that.marca)
+                && Objects.equals(modello, that.modello)
+                && Objects.equals(nomeClasse, that.nomeClasse)
+                && Objects.equals(depNomeStazione, that.depNomeStazione)
+                && Objects.equals(arrNomeStazione, that.arrNomeStazione);
+    }
+    @Override
+    public int hashCode() {
+        return Objects.hash(marca, modello, nomeClasse, depNomeStazione, arrNomeStazione);
     }
 }

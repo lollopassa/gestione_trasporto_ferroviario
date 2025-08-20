@@ -26,14 +26,14 @@ public class CarrozzaDAO {
             ps.setString(1, c.getMatricola());
             ps.setString(2, c.getMarca());
             ps.setString(3, c.getModello());
-            ps.setInt   (4, c.getnCarrozza());
+            ps.setInt   (4, c.getNCarrozza());
             ps.setString(5, c.getNomeClasse());
 
             ps.executeUpdate();
 
         } catch (SQLIntegrityConstraintViolationException dup) {
             throw new DAOException(
-                    "Esiste già la carrozza " + c.getnCarrozza()
+                    "Esiste già la carrozza " + c.getNCarrozza()
                             + " per il treno " + c.getMatricola(), dup
             );
         } catch (SQLException e) {
