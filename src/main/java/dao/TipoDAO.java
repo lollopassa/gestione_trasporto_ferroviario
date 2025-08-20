@@ -1,11 +1,14 @@
-// src/main/java/dao/TipoDAO.java
 package dao;
 
 import domain.Tipo;
 import exception.DAOException;
 import utility.DBConnection;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,7 +19,6 @@ public class TipoDAO {
     private static final String UPD     = "UPDATE tipo SET marca = ?, modello = ? WHERE marca = ? AND modello = ?";
     private static final String DEL     = "DELETE FROM tipo WHERE marca = ? AND modello = ?";
 
-    /** Restituisce tutti i tipi (marca+modello). */
     public List<Tipo> listAll() throws DAOException {
         List<Tipo> out = new ArrayList<>();
         try (Connection c = DBConnection.getConnection(PROPS);
@@ -34,7 +36,6 @@ public class TipoDAO {
         }
     }
 
-    /** Inserisce un nuovo tipo. */
     public void insert(Tipo t) throws DAOException {
         try (Connection c = DBConnection.getConnection(PROPS);
              PreparedStatement ps = c.prepareStatement(INS)) {
@@ -45,7 +46,6 @@ public class TipoDAO {
             throw new DAOException("Errore inserimento tipo: " + e.getMessage(), e);
         }
     }
-
 
     public void update(String oldMarca, String oldModello, Tipo newTipo) throws DAOException {
         try (Connection c = DBConnection.getConnection(PROPS);

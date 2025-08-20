@@ -5,14 +5,19 @@ public class Tipo {
     private String modello;
 
     public Tipo() {}
+
     public Tipo(String marca, String modello) {
-        this.marca = marca; this.modello = modello;
+        this.marca   = marca;
+        this.modello = modello;
     }
 
-    public String getMarca()   { return marca;   }
+    public String getMarca() { return marca; }
+    public void setMarca(String marca) { this.marca = marca; }
     public String getModello() { return modello; }
-    public void setMarca(String marca)     { this.marca = marca; }
     public void setModello(String modello) { this.modello = modello; }
 
-    @Override public String toString() { return marca + " " + modello; }
+    @Override
+    public String toString() {
+        return marca + " " + modello;
+    }
 }

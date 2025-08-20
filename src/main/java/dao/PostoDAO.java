@@ -1,4 +1,3 @@
-// src/main/java/dao/PostoDAO.java
 package dao;
 
 import exception.DAOException;
@@ -40,21 +39,18 @@ public class PostoDAO {
         List<String> out = new ArrayList<>();
         try (Connection conn = DBConnection.getConnection(PROPS);
              PreparedStatement ps = conn.prepareStatement(POSTI_LIBERI)) {
-
-            ps.setDate   (1, Date.valueOf(data));
-            ps.setString (2, matricola);
-            ps.setInt    (3, nCarrozza);
-            ps.setString (4, nomeClasse);
-
+            ps.setDate(1, Date.valueOf(data));
+            ps.setString(2, matricola);
+            ps.setInt(3, nCarrozza);
+            ps.setString(4, nomeClasse);
             try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next())
+                while (rs.next()) {
                     out.add(rs.getString("n_posto"));
+                }
             }
-            return out;
-
         } catch (SQLException e) {
             throw new DAOException("Errore lettura posti liberi: " + e.getMessage(), e);
         }
+        return out;
     }
-
 }
