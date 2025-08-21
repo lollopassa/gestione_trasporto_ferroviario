@@ -4,7 +4,7 @@ package domain;
 public class Credentials {
 
     private String username;
-    private String password;   // hash (preferibile) o plain-text per test
+    private String password;
     private Role   role;
 
     public Credentials() { }

@@ -12,45 +12,59 @@ public class PostoDAO {
 
     private static final String PROPS = "clienteuser.properties";
 
-    private static final String POSTI_LIBERI =
-            "SELECT p.n_posto " +
-                    "FROM posto p " +
-                    " JOIN carrozza c ON c.matricola = p.matricola " +
-                    "  AND c.marca     = p.marca " +
-                    "  AND c.modello   = p.modello " +
-                    "  AND c.n_carrozza= p.n_carrozza " +
-                    "LEFT JOIN prenotazione pr " +
-                    "  ON pr.matricola   = p.matricola " +
-                    " AND pr.marca       = p.marca " +
-                    " AND pr.modello     = p.modello " +
-                    " AND pr.n_carrozza  = p.n_carrozza " +
-                    " AND pr.n_posto     = p.n_posto " +
-                    " AND pr.data_viaggio= ? " +   // 1 = data
-                    "WHERE p.matricola   = ? " +   // 2 = matricola
-                    "  AND p.n_carrozza  = ? " +   // 3 = numero carrozza
-                    "  AND c.nome_classe = ? " +   // 4 = classe
-                    "  AND pr.n_posto IS NULL " +
-                    "ORDER BY p.n_posto";
+    // Posti liberi per matricola + carrozza + classe + data
+    private static final String SQL_POSTI_LIBERI =
+            "SELECT po.n_posto " +
+                    "FROM posto po " +
+                    "JOIN carrozza ca " +
+                    "  ON ca.matricola = po.matricola " +
+                    " AND ca.marca     = po.marca " +
+                    " AND ca.modello   = po.modello " +
+                    " AND ca.n_carrozza= po.n_carrozza " +
+                    "WHERE po.matricola = ? " +
+                    "  AND po.n_carrozza = ? " +
+                    "  AND ca.nome_classe = ? " +
+                    "  AND NOT EXISTS ( " +
+                    "      SELECT 1 FROM prenotazione pr " +
+                    "       WHERE pr.matricola  = po.matricola " +
+                    "         AND pr.marca      = po.marca " +
+                    "         AND pr.modello    = po.modello " +
+                    "         AND pr.n_carrozza = po.n_carrozza " +
+                    "         AND pr.n_posto    = po.n_posto " +
+                    "         AND pr.data_viaggio = ? " +
+                    "  ) " +
+                    "ORDER BY po.n_posto";
 
-    public List<String> postiLiberi(String matricola,
-                                    int nCarrozza,
-                                    String nomeClasse,
-                                    LocalDate data) throws DAOException {
+    public List<String> postiLiberi(String matricola, int nCarrozza, String nomeClasse, LocalDate data) throws DAOException {
+        if (matricola == null || matricola.isBlank()) throw new IllegalArgumentException("Matricola mancante.");
+        if (nCarrozza <= 0) throw new IllegalArgumentException("Numero carrozza non valido.");
+        if (nomeClasse == null || nomeClasse.isBlank()) throw new IllegalArgumentException("Classe mancante.");
+        if (data == null) throw new IllegalArgumentException("Data mancante.");
+
+        String clazz = normalizeClasse(nomeClasse);
+
         List<String> out = new ArrayList<>();
         try (Connection conn = DBConnection.getConnection(PROPS);
-             PreparedStatement ps = conn.prepareStatement(POSTI_LIBERI)) {
-            ps.setDate(1, Date.valueOf(data));
-            ps.setString(2, matricola);
-            ps.setInt(3, nCarrozza);
-            ps.setString(4, nomeClasse);
+             PreparedStatement ps = conn.prepareStatement(SQL_POSTI_LIBERI)) {
+
+            ps.setString(1, matricola);
+            ps.setInt(2, nCarrozza);
+            ps.setString(3, clazz);
+            ps.setDate(4, Date.valueOf(data));
+
             try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    out.add(rs.getString("n_posto"));
-                }
+                while (rs.next()) out.add(rs.getString("n_posto"));
             }
         } catch (SQLException e) {
             throw new DAOException("Errore lettura posti liberi: " + e.getMessage(), e);
         }
         return out;
+    }
+
+    private static String normalizeClasse(String cl) {
+        String c = cl.trim().toUpperCase();
+        if ("1A".equals(c) || "PRIMA".equals(c))   return "PRIMA";
+        if ("2A".equals(c) || "SECONDA".equals(c)) return "SECONDA";
+        return c;
     }
 }

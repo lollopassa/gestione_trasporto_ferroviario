@@ -48,20 +48,18 @@ public class PersonaleView {
                         break;
                     }
                     case "3": {
-                        System.out.print("Matricola treno: ");
-                        String matr = in.nextLine();
-                        System.out.print("Marca: ");
-                        String marca = in.nextLine();
-                        System.out.print("Modello: ");
-                        String modello = in.nextLine();
-                        System.out.print("Data/ora evento (YYYY-MM-DDTHH:MM): ");
-                        LocalDateTime dt = LocalDateTime.parse(in.nextLine());
-                        System.out.print("Descrizione: ");
-                        String descr = in.nextLine();
-                        ctrl.segnalaManutenzione(matr, marca, modello, dt, descr);
-                        System.out.println("Segnalazione inviata.");
+                        System.out.print("Matricola treno: "); String matr = in.nextLine();
+                        System.out.print("Marca: "); String marca = in.nextLine();
+                        System.out.print("Modello: "); String modello = in.nextLine();
+                        System.out.print("Descrizione: "); String descr = in.nextLine();
+
+                        // timestamp corrente
+                        java.time.LocalDateTime adesso = java.time.LocalDateTime.now();
+                        ctrl.segnalaManutenzione(matr, marca, modello, adesso, descr);
+                        System.out.println("Segnalazione inviata in data/ora: " + adesso);
                         break;
-                    }
+
+                }
                     case "4":
                         back = true;
                         break;

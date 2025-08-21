@@ -15,6 +15,8 @@ public class TrenoDAO {
 
     private static final String PROPS_PERSONALE = "personaleuser.properties";
     private static final String PROPS_GESTORE   = "gestoreuser.properties";
+    // 👉 per il flusso Cliente (letture “read-only”)
+    private static final String PROPS_CLIENTE   = "clienteuser.properties";
 
     private static final String SQL_LIGHT =
             "SELECT matricola, marca, modello " +
@@ -23,33 +25,37 @@ public class TrenoDAO {
 
     private static final String SQL_BY_TRATTA =
             "SELECT matricola, marca, modello, data_acquisto, orario_partenza, orario_arrivo, " +
-                    "dep_nome_stazione, arr_nome_stazione " +
+                    "       dep_nome_stazione, arr_nome_stazione " +
                     "FROM treno " +
                     "WHERE dep_nome_stazione = ? AND arr_nome_stazione = ? " +
                     "ORDER BY matricola";
 
     private static final String SQL_FULL =
             "SELECT matricola, marca, modello, data_acquisto, orario_partenza, orario_arrivo, " +
-                    "dep_nome_stazione, arr_nome_stazione " +
+                    "       dep_nome_stazione, arr_nome_stazione " +
                     "FROM treno " +
                     "ORDER BY matricola";
 
     private static final String INS =
             "INSERT INTO treno(" +
-                    "matricola, marca, modello, data_acquisto, orario_partenza, orario_arrivo, " +
-                    "dep_nome_stazione, arr_nome_stazione) " +
+                    "  matricola, marca, modello, data_acquisto, orario_partenza, orario_arrivo, " +
+                    "  dep_nome_stazione, arr_nome_stazione) " +
                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 
     private static final String UPD =
             "UPDATE treno SET marca = ?, modello = ?, data_acquisto = ?, orario_partenza = ?, orario_arrivo = ?, " +
-                    "dep_nome_stazione = ?, arr_nome_stazione = ? " +
+                    "       dep_nome_stazione = ?, arr_nome_stazione = ? " +
                     "WHERE matricola = ?";
 
     private static final String DEL =
             "DELETE FROM treno WHERE matricola = ?";
 
+    // elenco carrozze per un treno e classe
     private static final String SEL_VAGONI =
-            "SELECT n_carrozza FROM carrozza WHERE matricola=? AND nome_classe=? ORDER BY n_carrozza";
+            "SELECT n_carrozza " +
+                    "FROM carrozza " +
+                    "WHERE matricola = ? AND nome_classe = ? " +
+                    "ORDER BY n_carrozza";
 
     public List<Treno> getAllTreni() throws DAOException {
         List<Treno> result = new ArrayList<>();
@@ -71,7 +77,7 @@ public class TrenoDAO {
 
     public List<Treno> listByTratta(Tratta tratta) throws DAOException {
         List<Treno> result = new ArrayList<>();
-        try (Connection conn = DBConnection.getConnection(PROPS_PERSONALE);
+        try (Connection conn = DBConnection.getConnection(PROPS_CLIENTE); // ✅ cliente
              PreparedStatement ps = conn.prepareStatement(SQL_BY_TRATTA)) {
             ps.setString(1, tratta.getDepNomeStazione());
             ps.setString(2, tratta.getArrNomeStazione());
@@ -163,11 +169,19 @@ public class TrenoDAO {
     }
 
     public List<Integer> vagoni(String matricola, String nomeClasse) throws DAOException {
+        if (matricola == null || matricola.isBlank())
+            throw new IllegalArgumentException("Matricola mancante.");
+        if (nomeClasse == null || nomeClasse.isBlank())
+            throw new IllegalArgumentException("Classe mancante.");
+
+        // ✅ Normalizza 1A/2A -> PRIMA/SECONDA
+        String clazz = normalizeClasse(nomeClasse);
+
         List<Integer> out = new ArrayList<>();
-        try (Connection conn = DBConnection.getConnection(PROPS_PERSONALE);
+        try (Connection conn = DBConnection.getConnection(PROPS_CLIENTE); // ✅ cliente
              PreparedStatement ps = conn.prepareStatement(SEL_VAGONI)) {
             ps.setString(1, matricola);
-            ps.setString(2, nomeClasse);
+            ps.setString(2, clazz);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     out.add(rs.getInt("n_carrozza"));
@@ -177,5 +191,12 @@ public class TrenoDAO {
             throw new DAOException("Errore lettura vagoni: " + e.getMessage(), e);
         }
         return out;
+    }
+
+    private static String normalizeClasse(String cl) {
+        String c = cl.trim().toUpperCase();
+        if ("1A".equals(c) || "PRIMA".equals(c))   return "PRIMA";
+        if ("2A".equals(c) || "SECONDA".equals(c)) return "SECONDA";
+        return c;
     }
 }
