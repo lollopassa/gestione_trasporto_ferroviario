@@ -9,50 +9,62 @@ import java.sql.*;
 
 public final class PersonaleDAO {
 
-    private static final String PROPS_WRITE = "loginuser.properties";
-    private static final String SP_REGISTRA = "{CALL sp_registra_personale(?,?,?,?,?)}";
-    private static final String PROPS_READ  = "personaleuser.properties";
-    private static final String SQL_FIND_BY_USERNAME =
-            "SELECT nome, cognome, tipo, username FROM personale WHERE username = ?";
+    private static final String PROPS_LOGIN   = "loginuser.properties";   // per letture (findCfByUsername)
+    private static final String PROPS_GESTORE = "gestoreuser.properties"; // per promozione (SP eseguita dal gestore)
 
-    private PersonaleDAO() {}
+    private static final String SP_PROMUOVI =
+            "{CALL sp_promuovi_cliente_a_personale(?,?,?,?,?)}";
 
-    public static Personale registraPersonale(String nome,
-                                              String cognome,
-                                              TipoPersonale tipo,
-                                              String username,
-                                              String password) throws DAOException {
-        try (Connection conn = DBConnection.getConnection(PROPS_WRITE);
-             CallableStatement cs = conn.prepareCall(SP_REGISTRA)) {
-            cs.setString(1, nome);
-            cs.setString(2, cognome);
-            cs.setString(3, tipo.name());
-            cs.setString(4, username);
-            cs.setString(5, password);
-            cs.execute();
-            return new Personale(nome, cognome, tipo, username);
+    private static final String SQL_CF_BY_USER =
+            "SELECT cf FROM personale WHERE username = ?";
+
+    private PersonaleDAO() { }
+
+    /** PROMOZIONE: da cliente a personale (eseguita dal Gestore).
+     *  Aggiorna credentials.role=PERSONALE e inserisce in tabella 'personale'. */
+    public static Personale promuoviClienteAPersonale(String cf,
+                                                      TipoPersonale tipo,
+                                                      String idTreno,
+                                                      String marca,
+                                                      String modello) throws DAOException {
+        try (Connection conn = DBConnection.getConnection(PROPS_GESTORE);
+             CallableStatement cs = conn.prepareCall(SP_PROMUOVI)) {
+
+            cs.setString(1, cf);
+            cs.setString(2, tipo.name());   // 'MACCHINISTA' | 'CAPOTRENO'
+            cs.setString(3, idTreno);
+            cs.setString(4, marca);
+            cs.setString(5, modello);
+
+            boolean hasRs = cs.execute();
+
+            String username = null;
+            if (hasRs) {
+                try (ResultSet rs = cs.getResultSet()) {
+                    if (rs.next()) {
+                        username = rs.getString("username");
+                    }
+                }
+            }
+            if (username == null) username = "(promosso)";
+
+            return new Personale(cf, tipo, username, idTreno, marca, modello);
+
         } catch (SQLException e) {
-            throw new DAOException("Errore registrazione personale: " + e.getMessage(), e);
+            throw new DAOException("Errore promozione cliente a personale: " + e.getMessage(), e);
         }
     }
 
-    public static Personale getByUsername(String username) throws DAOException {
-        try (Connection conn = DBConnection.getConnection(PROPS_READ);
-             PreparedStatement ps = conn.prepareStatement(SQL_FIND_BY_USERNAME)) {
+    /** Ricava il CF del personale dallo username (usato lato PersonaleView). */
+    public static String findCfByUsername(String username) throws DAOException {
+        try (Connection conn = DBConnection.getConnection(PROPS_LOGIN);
+             PreparedStatement ps = conn.prepareStatement(SQL_CF_BY_USER)) {
             ps.setString(1, username);
             try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    String nome     = rs.getString("nome");
-                    String cognome  = rs.getString("cognome");
-                    TipoPersonale tipo = TipoPersonale.valueOf(rs.getString("tipo"));
-                    String user    = rs.getString("username");
-                    return new Personale(nome, cognome, tipo, user);
-                } else {
-                    throw new DAOException("Personale non trovato per username: " + username);
-                }
+                return rs.next() ? rs.getString(1) : null;
             }
         } catch (SQLException e) {
-            throw new DAOException("Errore lettura dati personale: " + e.getMessage(), e);
+            throw new DAOException("Errore lookup CF personale per username: " + e.getMessage(), e);
         }
     }
 }

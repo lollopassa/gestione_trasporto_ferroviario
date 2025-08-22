@@ -6,132 +6,171 @@ import utility.DBConnection;
 
 import java.sql.*;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
 
 public class TurnoDAO {
 
+    // Letture via SP (profilo PERSONALE)
     private static final String PROPS_PERSONALE = "personaleuser.properties";
+    // CRUD completo (profilo GESTORE)
     private static final String PROPS_GESTORE   = "gestoreuser.properties";
 
-    private static final String CALL_SP_SETTIMANALI = "{ call sp_turni_settimanali(?,?,?) }";
-    private static final String CALL_SP_STORICO     = "{ call sp_storico_turni(?,?,?,?) }";
+    // Stored procedures
+    private static final String SP_SETT = "{CALL sp_turni_settimanali(?,?)}";
+    private static final String SP_STOR = "{CALL sp_storico_turni(?,?,?)}";
 
-    private static final String SEL_ALL =
-            "SELECT nome, cognome, data_serv, ora_inizio, ora_fine, matricola, marca, modello " +
-                    "FROM turno ORDER BY data_serv, ora_inizio";
-    private static final String INS =
-            "INSERT INTO turno(nome, cognome, data_serv, ora_inizio, ora_fine, matricola, marca, modello) " +
-                    "VALUES (?,?,?,?,?,?,?,?)";
-    private static final String DEL =
-            "DELETE FROM turno WHERE nome=? AND cognome=? AND data_serv=? AND ora_inizio=? " +
-                    "AND matricola=? AND marca=? AND modello=?";
-
-    public List<Turno> getTurniSettimanali(String nome, String cognome, LocalDate refDate) throws DAOException {
-        List<Turno> result = new ArrayList<>();
-        try (Connection c = DBConnection.getConnection(PROPS_PERSONALE);
-             CallableStatement cs = c.prepareCall(CALL_SP_SETTIMANALI)) {
-            cs.setString(1, nome);
-            cs.setString(2, cognome);
-            cs.setDate(3, Date.valueOf(refDate));
+    /* =========================
+       LETTURE (report)
+       ========================= */
+    public List<Turno> getTurniSettimanali(String cf, LocalDate refDate) throws DAOException {
+        List<Turno> out = new ArrayList<>();
+        try (Connection conn = DBConnection.getConnection(PROPS_PERSONALE);
+             CallableStatement cs = conn.prepareCall(SP_SETT)) {
+            cs.setString(1, cf);
+            cs.setDate(2, Date.valueOf(refDate));
             try (ResultSet rs = cs.executeQuery()) {
-                while (rs.next()) {
-                    result.add(mapRow(rs));
-                }
+                while (rs.next()) out.add(mapTurno(rs));
             }
         } catch (SQLException e) {
             throw new DAOException("Errore lettura turni settimanali: " + e.getMessage(), e);
         }
-        return result;
+        return out;
     }
 
-    public List<Turno> getStoricoTurni(String nome, String cognome, LocalDate from, LocalDate to) throws DAOException {
-        List<Turno> result = new ArrayList<>();
-        try (Connection c = DBConnection.getConnection(PROPS_PERSONALE);
-             CallableStatement cs = c.prepareCall(CALL_SP_STORICO)) {
-            cs.setString(1, nome);
-            cs.setString(2, cognome);
-            cs.setDate(3, Date.valueOf(from));
-            cs.setDate(4, Date.valueOf(to));
+    public List<Turno> getStoricoTurni(String cf, LocalDate from, LocalDate to) throws DAOException {
+        List<Turno> out = new ArrayList<>();
+        try (Connection conn = DBConnection.getConnection(PROPS_PERSONALE);
+             CallableStatement cs = conn.prepareCall(SP_STOR)) {
+            cs.setString(1, cf);
+            cs.setDate(2, Date.valueOf(from));
+            cs.setDate(3, Date.valueOf(to));
             try (ResultSet rs = cs.executeQuery()) {
-                while (rs.next()) {
-                    result.add(mapRow(rs));
-                }
+                while (rs.next()) out.add(mapTurno(rs));
             }
         } catch (SQLException e) {
             throw new DAOException("Errore lettura storico turni: " + e.getMessage(), e);
         }
-        return result;
+        return out;
     }
 
+    public List<Turno> getPianificazioneMensile(String cf, YearMonth ym) throws DAOException {
+        LocalDate from = ym.atDay(1);
+        LocalDate to   = ym.atEndOfMonth();
+        return getStoricoTurni(cf, from, to);
+    }
+
+    /* =========================
+       CRUD (gestore)
+       ========================= */
     public List<Turno> listAll() throws DAOException {
-        List<Turno> result = new ArrayList<>();
+        final String sql =
+                "SELECT cf, idTreno, marca, modello, data_serv, ora_inizio, ora_fine " +
+                        "FROM turno " +
+                        "ORDER BY data_serv, ora_inizio";
         try (Connection c = DBConnection.getConnection(PROPS_GESTORE);
-             PreparedStatement ps = c.prepareStatement(SEL_ALL);
+             PreparedStatement ps = c.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) {
-                result.add(mapRow(rs));
-            }
+            List<Turno> out = new ArrayList<>();
+            while (rs.next()) out.add(mapTurno(rs));
+            return out;
         } catch (SQLException e) {
-            throw new DAOException("Errore lettura elenco turni: " + e.getMessage(), e);
+            throw new DAOException("Errore elenco turni: " + e.getMessage(), e);
         }
-        return result;
     }
 
-    public void insert(Turno turno) throws DAOException {
+    public void insert(Turno t) throws DAOException {
+        final String sql =
+                "INSERT INTO turno(cf, idTreno, marca, modello, data_serv, ora_inizio, ora_fine) " +
+                        "VALUES (?,?,?,?,?,?,?)";
         try (Connection c = DBConnection.getConnection(PROPS_GESTORE);
-             PreparedStatement ps = c.prepareStatement(INS)) {
-            ps.setString(1, turno.getNome());
-            ps.setString(2, turno.getCognome());
-            ps.setDate(3, Date.valueOf(turno.getDataServ()));
-            ps.setTime(4, Time.valueOf(turno.getOraInizio()));
-            ps.setTime(5, Time.valueOf(turno.getOraFine()));
-            ps.setString(6, turno.getMatricola());
-            ps.setString(7, turno.getMarca());
-            ps.setString(8, turno.getModello());
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setString(1, t.getCf());
+            ps.setString(2, t.getIdTreno());
+            ps.setString(3, t.getMarca());
+            ps.setString(4, t.getModello());
+            ps.setDate(5, Date.valueOf(t.getDataServ()));   // <— corretto
+            ps.setTime(6, Time.valueOf(t.getOraInizio()));
+            ps.setTime(7, Time.valueOf(t.getOraFine()));
             ps.executeUpdate();
         } catch (SQLException e) {
             throw new DAOException("Errore inserimento turno: " + e.getMessage(), e);
         }
     }
 
-    public void delete(Turno turno) throws DAOException {
-        try (Connection c = DBConnection.getConnection(PROPS_GESTORE);
-             PreparedStatement ps = c.prepareStatement(DEL)) {
-            ps.setString(1, turno.getNome());
-            ps.setString(2, turno.getCognome());
-            ps.setDate(3, Date.valueOf(turno.getDataServ()));
-            ps.setTime(4, Time.valueOf(turno.getOraInizio()));
-            ps.setString(5, turno.getMatricola());
-            ps.setString(6, turno.getMarca());
-            ps.setString(7, turno.getModello());
-            ps.executeUpdate();
+    /** Update come delete+insert (coerente con UNIQUE dello slot). */
+    public void update(Turno oldT, Turno newT) throws DAOException {
+        Connection c = null;
+        try {
+            c = DBConnection.getConnection(PROPS_GESTORE);
+            c.setAutoCommit(false);
+
+            int del = deleteInternal(c, oldT);
+            if (del == 0) throw new DAOException("Turno da aggiornare non trovato.");
+
+            final String ins =
+                    "INSERT INTO turno(cf, idTreno, marca, modello, data_serv, ora_inizio, ora_fine) " +
+                            "VALUES (?,?,?,?,?,?,?)";
+            try (PreparedStatement ps = c.prepareStatement(ins)) {
+                ps.setString(1, newT.getCf());
+                ps.setString(2, newT.getIdTreno());
+                ps.setString(3, newT.getMarca());
+                ps.setString(4, newT.getModello());
+                ps.setDate(5, Date.valueOf(newT.getDataServ())); // <— corretto
+                ps.setTime(6, Time.valueOf(newT.getOraInizio()));
+                ps.setTime(7, Time.valueOf(newT.getOraFine()));
+                ps.executeUpdate();
+            }
+
+            c.commit();
         } catch (SQLException e) {
-            throw new DAOException("Errore eliminazione turno: " + e.getMessage(), e);
+            try { if (c != null) c.rollback(); } catch (SQLException ignore) {}
+            throw new DAOException("Errore update turno: " + e.getMessage(), e);
+        } finally {
+            try { if (c != null) c.setAutoCommit(true); } catch (SQLException ignore) {}
+            try { if (c != null) c.close(); } catch (SQLException ignore) {}
         }
     }
 
-    public void update(Turno oldTurno, Turno newTurno) throws DAOException {
-        delete(oldTurno);
-        insert(newTurno);
+    public void delete(Turno t) throws DAOException {
+        try (Connection c = DBConnection.getConnection(PROPS_GESTORE)) {
+            int n = deleteInternal(c, t);
+            if (n == 0) throw new DAOException("Turno non trovato.");
+        } catch (SQLException e) {
+            throw new DAOException("Errore delete turno: " + e.getMessage(), e);
+        }
     }
 
-    private Turno mapRow(ResultSet rs) throws SQLException {
-        String matricola = null;
-        String marca     = null;
-        String modello   = null;
-        try { matricola = rs.getString("matricola"); } catch (SQLException ignored) {}
-        try { marca     = rs.getString("marca"); }     catch (SQLException ignored) {}
-        try { modello   = rs.getString("modello"); }   catch (SQLException ignored) {}
+    private int deleteInternal(Connection c, Turno t) throws SQLException {
+        final String del =
+                "DELETE FROM turno " +
+                        "WHERE cf=? AND idTreno=? AND marca=? AND modello=? " +
+                        "AND data_serv=? AND ora_inizio=? AND ora_fine=?";
+        try (PreparedStatement ps = c.prepareStatement(del)) {
+            ps.setString(1, t.getCf());
+            ps.setString(2, t.getIdTreno());
+            ps.setString(3, t.getMarca());
+            ps.setString(4, t.getModello());
+            ps.setDate(5, Date.valueOf(t.getDataServ())); // <— corretto
+            ps.setTime(6, Time.valueOf(t.getOraInizio()));
+            ps.setTime(7, Time.valueOf(t.getOraFine()));
+            return ps.executeUpdate();
+        }
+    }
+
+    /* =========================
+       MAPPER
+       ========================= */
+    private Turno mapTurno(ResultSet rs) throws SQLException {
         return new Turno(
-                rs.getString("nome"),
-                rs.getString("cognome"),
+                rs.getString("cf"),
                 rs.getDate("data_serv").toLocalDate(),
                 rs.getTime("ora_inizio").toLocalTime(),
                 rs.getTime("ora_fine").toLocalTime(),
-                matricola,
-                marca,
-                modello
+                rs.getString("idTreno"),
+                rs.getString("marca"),
+                rs.getString("modello")
         );
     }
 }

@@ -1,23 +1,25 @@
 package domain;
 
-public class Tipo {
-    private String marca;
-    private String modello;
+import java.util.Objects;
 
-    public Tipo() {}
+public class Tipo {
+    private final String marca;
+    private final String modello;
 
     public Tipo(String marca, String modello) {
-        this.marca   = marca;
+        this.marca = marca;
         this.modello = modello;
     }
 
     public String getMarca() { return marca; }
-    public void setMarca(String marca) { this.marca = marca; }
     public String getModello() { return modello; }
-    public void setModello(String modello) { this.modello = modello; }
 
-    @Override
-    public String toString() {
-        return marca + " " + modello;
+    @Override public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Tipo)) return false;
+        Tipo t = (Tipo) o;
+        return Objects.equals(marca, t.marca) && Objects.equals(modello, t.modello);
     }
+    @Override public int hashCode() { return Objects.hash(marca, modello); }
+    @Override public String toString() { return marca + " " + modello; }
 }

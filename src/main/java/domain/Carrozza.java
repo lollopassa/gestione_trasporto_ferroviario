@@ -1,30 +1,41 @@
 package domain;
 
+import java.util.Objects;
+
 public class Carrozza {
-    private String matricola;
-    private String marca;
-    private String modello;
-    private int    nCarrozza;
-    private String nomeClasse;
+    private final String idTreno;   // CHAR(4)
+    private final String marca;     // VARCHAR(30)
+    private final String modello;   // VARCHAR(30)
+    private final int nCarrozza;    // SMALLINT > 0
+    private final String nomeClasse; // ENUM('PRIMA','SECONDA')
 
-    public Carrozza() {}
-
-    public Carrozza(String matricola, String marca, String modello, int nCarrozza, String nomeClasse) {
-        this.matricola  = matricola;
-        this.marca      = marca;
-        this.modello    = modello;
-        this.nCarrozza  = nCarrozza;
+    public Carrozza(String idTreno, String marca, String modello, int nCarrozza, String nomeClasse) {
+        this.idTreno = idTreno;
+        this.marca = marca;
+        this.modello = modello;
+        this.nCarrozza = nCarrozza;
         this.nomeClasse = nomeClasse;
     }
 
-    public String getMatricola() { return matricola; }
-    public void setMatricola(String matricola) { this.matricola = matricola; }
+    public String getIdTreno() { return idTreno; }
     public String getMarca() { return marca; }
-    public void setMarca(String marca) { this.marca = marca; }
     public String getModello() { return modello; }
-    public void setModello(String modello) { this.modello = modello; }
     public int getNCarrozza() { return nCarrozza; }
-    public void setNCarrozza(int nCarrozza) { this.nCarrozza = nCarrozza; }
     public String getNomeClasse() { return nomeClasse; }
-    public void setNomeClasse(String nomeClasse) { this.nomeClasse = nomeClasse; }
+
+    @Override public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Carrozza)) return false;
+        Carrozza c = (Carrozza) o;
+        return nCarrozza == c.nCarrozza &&
+                Objects.equals(idTreno, c.idTreno) &&
+                Objects.equals(marca, c.marca) &&
+                Objects.equals(modello, c.modello);
+    }
+    @Override public int hashCode() {
+        return Objects.hash(idTreno, marca, modello, nCarrozza);
+    }
+    @Override public String toString() {
+        return "Carrozza{" + idTreno + "," + marca + "," + modello + ", n=" + nCarrozza + ", classe=" + nomeClasse + "}";
+    }
 }

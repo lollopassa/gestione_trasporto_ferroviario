@@ -1,27 +1,28 @@
 package domain;
 
-public class Stazione {
-    private String nomeStazione;
-    private String citta;
-    private String provincia;
+import java.util.Objects;
 
-    public Stazione() {}
+public class Stazione {
+    private final String nomeStazione;
+    private final String citta;
+    private final String provincia;
 
     public Stazione(String nomeStazione, String citta, String provincia) {
         this.nomeStazione = nomeStazione;
-        this.citta        = citta;
-        this.provincia    = provincia;
+        this.citta = citta;
+        this.provincia = provincia;
     }
 
     public String getNomeStazione() { return nomeStazione; }
-    public void setNomeStazione(String nomeStazione) { this.nomeStazione = nomeStazione; }
     public String getCitta() { return citta; }
-    public void setCitta(String citta) { this.citta = citta; }
     public String getProvincia() { return provincia; }
-    public void setProvincia(String provincia) { this.provincia = provincia; }
 
-    @Override
-    public String toString() {
-        return nomeStazione + (citta != null && !citta.isEmpty() ? ", " + citta : "");
+    @Override public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Stazione)) return false;
+        Stazione s = (Stazione) o;
+        return Objects.equals(nomeStazione, s.nomeStazione);
     }
+    @Override public int hashCode() { return Objects.hash(nomeStazione); }
+    @Override public String toString() { return nomeStazione + " (" + citta + " - " + provincia + ")"; }
 }

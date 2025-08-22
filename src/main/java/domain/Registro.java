@@ -2,7 +2,7 @@ package domain;
 
 import java.time.LocalDateTime;
 
-public class Manutenzione {
+public class Registro {
 
     private String matricola;
     private String marca;
@@ -10,10 +10,10 @@ public class Manutenzione {
     private LocalDateTime dataEvento;
     private String descrizione;
 
-    public Manutenzione() {}
+    public Registro() {}
 
-    public Manutenzione(String matricola, String marca, String modello,
-                        LocalDateTime dataEvento, String descrizione) {
+    public Registro(String matricola, String marca, String modello,
+                    LocalDateTime dataEvento, String descrizione) {
         this.matricola = matricola;
         this.marca = marca;
         this.modello = modello;

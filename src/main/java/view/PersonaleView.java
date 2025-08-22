@@ -1,30 +1,32 @@
 package view;
 
 import controller.PersonaleController;
+import domain.Registro;
 import domain.Turno;
 import exception.DAOException;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
 import java.util.List;
 import java.util.Scanner;
 
 public class PersonaleView {
     private final Scanner in = new Scanner(System.in);
-    private final PersonaleController ctrl = new PersonaleController();
+    private final PersonaleController ctrl;
+
+    /** Passa qui lo username dell'utente loggato (es.: "luca"). */
+    public PersonaleView(String loggedUsername) throws DAOException {
+        this.ctrl = PersonaleController.forUser(loggedUsername);
+    }
 
     public void show() {
-        System.out.print("Nome: ");
-        String nome = in.nextLine();
-        System.out.print("Cognome: ");
-        String cognome = in.nextLine();
-
         boolean back = false;
         while (!back) {
             System.out.println("\n-- Menu Personale --");
-            System.out.println("1) Turni settimanali");
-            System.out.println("2) Storico turni");
-            System.out.println("3) Segnala manutenzione");
+            System.out.println("1) Pianificazione mensile");
+            System.out.println("2) Report settimanale");
+            System.out.println("3) Segnala evento a registro");
             System.out.println("4) Indietro");
             System.out.print("Scelta: ");
             String s = in.nextLine();
@@ -32,34 +34,32 @@ public class PersonaleView {
             try {
                 switch (s) {
                     case "1": {
-                        System.out.print("Data riferimento (YYYY-MM-DD): ");
-                        LocalDate ref = LocalDate.parse(in.nextLine());
-                        List<Turno> turni = ctrl.getTurniSettimanali(nome, cognome, ref);
-                        turni.forEach(System.out::println);
+                        System.out.print("Mese (YYYY-MM): ");
+                        YearMonth ym = YearMonth.parse(in.nextLine().trim());
+                        String pianificazione = ctrl.stampaPianificazioneMensile(ym);
+                        System.out.println(pianificazione);
                         break;
                     }
                     case "2": {
-                        System.out.print("Da (YYYY-MM-DD): ");
-                        LocalDate from = LocalDate.parse(in.nextLine());
-                        System.out.print("A (YYYY-MM-DD): ");
-                        LocalDate to = LocalDate.parse(in.nextLine());
-                        List<Turno> turni = ctrl.getStoricoTurni(nome, cognome, from, to);
-                        turni.forEach(System.out::println);
+                        System.out.print("Data riferimento settimana (YYYY-MM-DD): ");
+                        LocalDate ref = LocalDate.parse(in.nextLine().trim());
+                        String report = ctrl.generaReportSettimanale(ref);
+                        System.out.println(report);
                         break;
                     }
                     case "3": {
-                        System.out.print("Matricola treno: "); String matr = in.nextLine();
-                        System.out.print("Marca: "); String marca = in.nextLine();
-                        System.out.print("Modello: "); String modello = in.nextLine();
-                        System.out.print("Descrizione: "); String descr = in.nextLine();
+                        System.out.print("ID Treno (4 cifre): ");
+                        String idTreno = in.nextLine().trim();
+                        System.out.print("Descrizione evento: ");
+                        String descr = in.nextLine().trim();
 
-                        // timestamp corrente
-                        java.time.LocalDateTime adesso = java.time.LocalDateTime.now();
-                        ctrl.segnalaManutenzione(matr, marca, modello, adesso, descr);
-                        System.out.println("Segnalazione inviata in data/ora: " + adesso);
+                        LocalDateTime adesso = LocalDateTime.now();
+                        ctrl.segnalaRegistro(idTreno, adesso, descr);
+
+                        String when = adesso.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
+                        System.out.printf("Evento registrato: %s | %s | %s%n", idTreno, when, descr);
                         break;
-
-                }
+                    }
                     case "4":
                         back = true;
                         break;

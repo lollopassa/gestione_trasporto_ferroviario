@@ -1,23 +1,22 @@
 package domain;
 
+import java.util.Objects;
+
 public class Cliente {
-    private String nome;
-    private String cognome;
+    private final String cf; // CHAR(16)
 
-    public Cliente() {}
-
-    public Cliente(String nome, String cognome) {
-        this.nome    = nome;
-        this.cognome = cognome;
+    public Cliente(String cf) {
+        this.cf = cf;
     }
 
-    public String getNome() { return nome; }
-    public void setNome(String nome) { this.nome = nome; }
-    public String getCognome() { return cognome; }
-    public void setCognome(String cognome) { this.cognome = cognome; }
+    public String getCf() { return cf; }
 
-    @Override
-    public String toString() {
-        return nome + " " + cognome;
+    @Override public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Cliente)) return false;
+        Cliente c = (Cliente) o;
+        return Objects.equals(cf, c.cf);
     }
+    @Override public int hashCode() { return Objects.hash(cf); }
+    @Override public String toString() { return "Cliente{cf='" + cf + "'}"; }
 }

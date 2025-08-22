@@ -6,8 +6,6 @@ import exception.DAOException;
 import utility.DBConnection;
 
 import java.sql.*;
-import java.time.LocalDate;
-import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,46 +13,44 @@ public class TrenoDAO {
 
     private static final String PROPS_PERSONALE = "personaleuser.properties";
     private static final String PROPS_GESTORE   = "gestoreuser.properties";
-    // 👉 per il flusso Cliente (letture “read-only”)
     private static final String PROPS_CLIENTE   = "clienteuser.properties";
 
     private static final String SQL_LIGHT =
-            "SELECT matricola, marca, modello " +
+            "SELECT idTreno, marca, modello " +
                     "FROM treno " +
-                    "ORDER BY matricola";
+                    "ORDER BY idTreno";
 
     private static final String SQL_BY_TRATTA =
-            "SELECT matricola, marca, modello, data_acquisto, orario_partenza, orario_arrivo, " +
+            "SELECT idTreno, marca, modello, data_acquisto, orario_partenza, orario_arrivo, " +
                     "       dep_nome_stazione, arr_nome_stazione " +
                     "FROM treno " +
                     "WHERE dep_nome_stazione = ? AND arr_nome_stazione = ? " +
-                    "ORDER BY matricola";
+                    "ORDER BY idTreno";
 
     private static final String SQL_FULL =
-            "SELECT matricola, marca, modello, data_acquisto, orario_partenza, orario_arrivo, " +
+            "SELECT idTreno, marca, modello, data_acquisto, orario_partenza, orario_arrivo, " +
                     "       dep_nome_stazione, arr_nome_stazione " +
                     "FROM treno " +
-                    "ORDER BY matricola";
+                    "ORDER BY idTreno";
 
     private static final String INS =
             "INSERT INTO treno(" +
-                    "  matricola, marca, modello, data_acquisto, orario_partenza, orario_arrivo, " +
+                    "  idTreno, marca, modello, data_acquisto, orario_partenza, orario_arrivo, " +
                     "  dep_nome_stazione, arr_nome_stazione) " +
                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 
     private static final String UPD =
             "UPDATE treno SET marca = ?, modello = ?, data_acquisto = ?, orario_partenza = ?, orario_arrivo = ?, " +
                     "       dep_nome_stazione = ?, arr_nome_stazione = ? " +
-                    "WHERE matricola = ?";
+                    "WHERE idTreno = ?";
 
     private static final String DEL =
-            "DELETE FROM treno WHERE matricola = ?";
+            "DELETE FROM treno WHERE idTreno = ?";
 
-    // elenco carrozze per un treno e classe
     private static final String SEL_VAGONI =
             "SELECT n_carrozza " +
                     "FROM carrozza " +
-                    "WHERE matricola = ? AND nome_classe = ? " +
+                    "WHERE idTreno = ? AND nome_classe = ? " +
                     "ORDER BY n_carrozza";
 
     public List<Treno> getAllTreni() throws DAOException {
@@ -64,7 +60,7 @@ public class TrenoDAO {
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
                 result.add(new Treno(
-                        rs.getString("matricola"),
+                        rs.getString("idTreno"),
                         rs.getString("marca"),
                         rs.getString("modello")
                 ));
@@ -77,14 +73,14 @@ public class TrenoDAO {
 
     public List<Treno> listByTratta(Tratta tratta) throws DAOException {
         List<Treno> result = new ArrayList<>();
-        try (Connection conn = DBConnection.getConnection(PROPS_CLIENTE); // ✅ cliente
+        try (Connection conn = DBConnection.getConnection(PROPS_CLIENTE);
              PreparedStatement ps = conn.prepareStatement(SQL_BY_TRATTA)) {
             ps.setString(1, tratta.getDepNomeStazione());
             ps.setString(2, tratta.getArrNomeStazione());
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     result.add(new Treno(
-                            rs.getString("matricola"),
+                            rs.getString("idTreno"),
                             rs.getString("marca"),
                             rs.getString("modello"),
                             rs.getDate("data_acquisto").toLocalDate(),
@@ -108,7 +104,7 @@ public class TrenoDAO {
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
                 result.add(new Treno(
-                        rs.getString("matricola"),
+                        rs.getString("idTreno"),
                         rs.getString("marca"),
                         rs.getString("modello"),
                         rs.getDate("data_acquisto").toLocalDate(),
@@ -127,7 +123,7 @@ public class TrenoDAO {
     public void insert(Treno treno) throws DAOException {
         try (Connection conn = DBConnection.getConnection(PROPS_GESTORE);
              PreparedStatement ps = conn.prepareStatement(INS)) {
-            ps.setString(1, treno.getMatricola());
+            ps.setString(1, treno.getIdTreno());
             ps.setString(2, treno.getMarca());
             ps.setString(3, treno.getModello());
             ps.setDate(4, Date.valueOf(treno.getDataAcquisto()));
@@ -151,36 +147,35 @@ public class TrenoDAO {
             ps.setTime(5, Time.valueOf(treno.getOrarioArrivo()));
             ps.setString(6, treno.getDepNomeStaz());
             ps.setString(7, treno.getArrNomeStaz());
-            ps.setString(8, treno.getMatricola());
+            ps.setString(8, treno.getIdTreno());
             ps.executeUpdate();
         } catch (SQLException e) {
             throw new DAOException("Errore aggiornamento treno: " + e.getMessage(), e);
         }
     }
 
-    public void delete(String matricola) throws DAOException {
+    public void delete(String idTreno) throws DAOException {
         try (Connection conn = DBConnection.getConnection(PROPS_GESTORE);
              PreparedStatement ps = conn.prepareStatement(DEL)) {
-            ps.setString(1, matricola);
+            ps.setString(1, idTreno);
             ps.executeUpdate();
         } catch (SQLException e) {
             throw new DAOException("Errore eliminazione treno: " + e.getMessage(), e);
         }
     }
 
-    public List<Integer> vagoni(String matricola, String nomeClasse) throws DAOException {
-        if (matricola == null || matricola.isBlank())
-            throw new IllegalArgumentException("Matricola mancante.");
+    public List<Integer> vagoni(String idTreno, String nomeClasse) throws DAOException {
+        if (idTreno == null || idTreno.isBlank())
+            throw new IllegalArgumentException("idTreno mancante.");
         if (nomeClasse == null || nomeClasse.isBlank())
             throw new IllegalArgumentException("Classe mancante.");
 
-        // ✅ Normalizza 1A/2A -> PRIMA/SECONDA
         String clazz = normalizeClasse(nomeClasse);
 
         List<Integer> out = new ArrayList<>();
-        try (Connection conn = DBConnection.getConnection(PROPS_CLIENTE); // ✅ cliente
+        try (Connection conn = DBConnection.getConnection(PROPS_CLIENTE);
              PreparedStatement ps = conn.prepareStatement(SEL_VAGONI)) {
-            ps.setString(1, matricola);
+            ps.setString(1, idTreno);
             ps.setString(2, clazz);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {

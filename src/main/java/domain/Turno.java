@@ -2,51 +2,50 @@ package domain;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.Objects;
 
 public class Turno {
-    private String nome;
-    private String cognome;
-    private LocalDate dataServ;
-    private LocalTime oraInizio;
-    private LocalTime oraFine;
-    private String matricola;
-    private String marca;
-    private String modello;
+    private final String cf;        // CHAR(16)
+    private final LocalDate dataServ;
+    private final LocalTime oraInizio;
+    private final LocalTime oraFine;
+    private final String idTreno;   // CHAR(4)
+    private final String marca;
+    private final String modello;
 
-    public Turno() {}
-
-    public Turno(String nome, String cognome, LocalDate dataServ,
-                 LocalTime oraInizio, LocalTime oraFine,
-                 String matricola, String marca, String modello) {
-        this.nome       = nome;
-        this.cognome    = cognome;
-        this.dataServ   = dataServ;
-        this.oraInizio  = oraInizio;
-        this.oraFine    = oraFine;
-        this.matricola  = matricola;
-        this.marca      = marca;
-        this.modello    = modello;
+    public Turno(String cf, LocalDate dataServ, LocalTime oraInizio, LocalTime oraFine,
+                 String idTreno, String marca, String modello) {
+        this.cf = cf;
+        this.dataServ = dataServ;
+        this.oraInizio = oraInizio;
+        this.oraFine = oraFine;
+        this.idTreno = idTreno;
+        this.marca = marca;
+        this.modello = modello;
     }
 
-    public String getNome() { return nome; }
-    public void setNome(String nome) { this.nome = nome; }
-    public String getCognome() { return cognome; }
-    public void setCognome(String cognome) { this.cognome = cognome; }
+    public String getCf() { return cf; }
     public LocalDate getDataServ() { return dataServ; }
-    public void setDataServ(LocalDate dataServ) { this.dataServ = dataServ; }
     public LocalTime getOraInizio() { return oraInizio; }
-    public void setOraInizio(LocalTime oraInizio) { this.oraInizio = oraInizio; }
     public LocalTime getOraFine() { return oraFine; }
-    public void setOraFine(LocalTime oraFine) { this.oraFine = oraFine; }
-    public String getMatricola() { return matricola; }
-    public void setMatricola(String matricola) { this.matricola = matricola; }
+    public String getIdTreno() { return idTreno; }
     public String getMarca() { return marca; }
-    public void setMarca(String marca) { this.marca = marca; }
     public String getModello() { return modello; }
-    public void setModello(String modello) { this.modello = modello; }
 
-    @Override
-    public String toString() {
-        return nome + " " + cognome + " – " + dataServ;
+    @Override public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Turno)) return false;
+        Turno t = (Turno) o;
+        return Objects.equals(cf, t.cf) &&
+                Objects.equals(idTreno, t.idTreno) &&
+                Objects.equals(marca, t.marca) &&
+                Objects.equals(modello, t.modello) &&
+                Objects.equals(dataServ, t.dataServ) &&
+                Objects.equals(oraInizio, t.oraInizio);
+    }
+    @Override public int hashCode() { return Objects.hash(cf, idTreno, marca, modello, dataServ, oraInizio); }
+    @Override public String toString() {
+        return "Turno{" + cf + ", " + dataServ + " " + oraInizio + "-" + oraFine +
+                ", treno=" + idTreno + " " + marca + " " + modello + "}";
     }
 }

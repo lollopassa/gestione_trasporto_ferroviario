@@ -13,17 +13,17 @@ public class CarrozzaDAO {
 
     private static final String PROPS = "gestoreuser.properties";
 
-    // 5 colonne: matricola, marca, modello, n_carrozza, nome_classe
+    // 5 colonne: idTreno, marca, modello, n_carrozza, nome_classe
     private static final String INS_CARROZZA =
             "INSERT INTO carrozza (" +
-                    "  matricola, marca, modello, n_carrozza, nome_classe" +
+                    "  idTreno, marca, modello, n_carrozza, nome_classe" +
                     ") VALUES (?,?,?,?,?)";
 
     public void inserisci(Carrozza c) throws DAOException {
         try (Connection conn = DBConnection.getConnection(PROPS);
              PreparedStatement ps = conn.prepareStatement(INS_CARROZZA)) {
 
-            ps.setString(1, c.getMatricola());
+            ps.setString(1, c.getIdTreno());
             ps.setString(2, c.getMarca());
             ps.setString(3, c.getModello());
             ps.setInt   (4, c.getNCarrozza());
@@ -34,12 +34,10 @@ public class CarrozzaDAO {
         } catch (SQLIntegrityConstraintViolationException dup) {
             throw new DAOException(
                     "Esiste già la carrozza " + c.getNCarrozza()
-                            + " per il treno " + c.getMatricola(), dup
+                            + " per il treno " + c.getIdTreno(), dup
             );
         } catch (SQLException e) {
-            throw new DAOException(
-                    "Errore inserimento carrozza: " + e.getMessage(), e
-            );
+            throw new DAOException("Errore inserimento carrozza: " + e.getMessage(), e);
         }
     }
 }
