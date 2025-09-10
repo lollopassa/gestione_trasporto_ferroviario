@@ -1,41 +1,70 @@
 package domain;
 
+import java.time.LocalDate;
 import java.util.Objects;
 
 public class Carrozza {
-    private final String idTreno;   // CHAR(4)
-    private final String marca;     // VARCHAR(30)
-    private final String modello;   // VARCHAR(30)
-    private final int nCarrozza;    // SMALLINT > 0
-    private final String nomeClasse; // ENUM('PRIMA','SECONDA')
+    private Integer idComponente;
+    private String idTreno;
+    private String classe;
+    private Integer numero;
+    private String marca;
+    private String modello;
+    private LocalDate dataAcquisto;
+    private String manutenzione;
 
-    public Carrozza(String idTreno, String marca, String modello, int nCarrozza, String nomeClasse) {
+
+    public Carrozza(Integer idComponente, String idTreno, String classe, Integer numero,
+                    String marca, String modello, LocalDate dataAcquisto, String manutenzione) {
+        this.idComponente = idComponente;
         this.idTreno = idTreno;
+        this.classe = classe;
+        this.numero = numero;
         this.marca = marca;
         this.modello = modello;
-        this.nCarrozza = nCarrozza;
-        this.nomeClasse = nomeClasse;
+        this.dataAcquisto = dataAcquisto;
+        this.manutenzione = manutenzione;
     }
 
+    public Integer getIdComponente() { return idComponente; }
+    public void setIdComponente(Integer idComponente) { this.idComponente = idComponente; }
     public String getIdTreno() { return idTreno; }
+    public void setIdTreno(String idTreno) { this.idTreno = idTreno; }
+    public String getClasse() { return classe; }
+    public void setClasse(String classe) { this.classe = classe; }
+    public Integer getNumero() { return numero; }
+    public void setNumero(Integer numero) { this.numero = numero; }
     public String getMarca() { return marca; }
+    public void setMarca(String marca) { this.marca = marca; }
     public String getModello() { return modello; }
-    public int getNCarrozza() { return nCarrozza; }
-    public String getNomeClasse() { return nomeClasse; }
+    public void setModello(String modello) { this.modello = modello; }
+    public LocalDate getDataAcquisto() { return dataAcquisto; }
+    public void setDataAcquisto(LocalDate dataAcquisto) { this.dataAcquisto = dataAcquisto; }
+    public String getManutenzione() { return manutenzione; }
+    public void setManutenzione(String manutenzione) { this.manutenzione = manutenzione; }
 
     @Override public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof Carrozza)) return false;
-        Carrozza c = (Carrozza) o;
-        return nCarrozza == c.nCarrozza &&
-                Objects.equals(idTreno, c.idTreno) &&
-                Objects.equals(marca, c.marca) &&
-                Objects.equals(modello, c.modello);
+        Carrozza that = (Carrozza) o;
+        return Objects.equals(idComponente, that.idComponente) &&
+                Objects.equals(idTreno, that.idTreno);
     }
+
     @Override public int hashCode() {
-        return Objects.hash(idTreno, marca, modello, nCarrozza);
+        return Objects.hash(idComponente, idTreno);
     }
+
     @Override public String toString() {
-        return "Carrozza{" + idTreno + "," + marca + "," + modello + ", n=" + nCarrozza + ", classe=" + nomeClasse + "}";
+        return "carrozza{" +
+                "idComponente=" + idComponente +
+                ", idTreno='" + idTreno + '\'' +
+                ", classe='" + classe + '\'' +
+                ", numero=" + numero +
+                ", marca='" + marca + '\'' +
+                ", modello='" + modello + '\'' +
+                ", dataAcquisto=" + dataAcquisto +
+                ", manutenzione='" + manutenzione + '\'' +
+                '}';
     }
 }

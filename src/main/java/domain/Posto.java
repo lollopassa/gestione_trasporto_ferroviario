@@ -1,30 +1,44 @@
 package domain;
 
+import java.util.Objects;
+
 public class Posto {
-    private String matricola;
-    private String marca;
-    private String modello;
-    private int    nCarrozza;
-    private String nPosto;
+    private Integer numeroPosto;
+    private Integer idComponente;
+    private String idTreno;
 
-    public Posto() {}
 
-    public Posto(String matricola, String marca, String modello, int nCarrozza, String nPosto) {
-        this.matricola = matricola;
-        this.marca     = marca;
-        this.modello   = modello;
-        this.nCarrozza = nCarrozza;
-        this.nPosto    = nPosto;
+    public Posto(Integer numeroPosto, Integer idComponente, String idTreno) {
+        this.numeroPosto = numeroPosto;
+        this.idComponente = idComponente;
+        this.idTreno = idTreno;
     }
 
-    public String getMatricola() { return matricola; }
-    public void setMatricola(String matricola) { this.matricola = matricola; }
-    public String getMarca() { return marca; }
-    public void setMarca(String marca) { this.marca = marca; }
-    public String getModello() { return modello; }
-    public void setModello(String modello) { this.modello = modello; }
-    public int getNCarrozza() { return nCarrozza; }
-    public void setNCarrozza(int nCarrozza) { this.nCarrozza = nCarrozza; }
-    public String getNPosto() { return nPosto; }
-    public void setNPosto(String nPosto) { this.nPosto = nPosto; }
+    public Integer getNumeroPosto() { return numeroPosto; }
+    public void setNumeroPosto(Integer numeroPosto) { this.numeroPosto = numeroPosto; }
+    public Integer getIdComponente() { return idComponente; }
+    public void setIdComponente(Integer idComponente) { this.idComponente = idComponente; }
+    public String getIdTreno() { return idTreno; }
+    public void setIdTreno(String idTreno) { this.idTreno = idTreno; }
+
+    @Override public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Posto)) return false;
+        Posto posto = (Posto) o;
+        return Objects.equals(numeroPosto, posto.numeroPosto) &&
+                Objects.equals(idComponente, posto.idComponente) &&
+                Objects.equals(idTreno, posto.idTreno);
+    }
+
+    @Override public int hashCode() {
+        return Objects.hash(numeroPosto, idComponente, idTreno);
+    }
+
+    @Override public String toString() {
+        return "posto{" +
+                "numeroPosto=" + numeroPosto +
+                ", idComponente=" + idComponente +
+                ", idTreno='" + idTreno + '\'' +
+                '}';
+    }
 }

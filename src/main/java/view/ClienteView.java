@@ -1,191 +1,263 @@
 package view;
 
 import controller.ClienteController;
-import domain.Classe;
-import domain.Prenotazione;
+import dao.ClienteDao.SintesiPrenotazione;
+import domain.Carrozza;
+import domain.Fermata;
 import domain.Tratta;
 import domain.Treno;
 import exception.DAOException;
 
 import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Scanner;
 
 public class ClienteView {
     private final Scanner in = new Scanner(System.in);
-    private final ClienteController ctrl;
+    private final ClienteController controller;
+    private final String username;
+    private final String cfPrenotante;
 
-    /** Passa qui lo username dell'utente loggato (es.: "mario"). */
-    public ClienteView(String loggedUsername) throws DAOException {
-        this.ctrl = ClienteController.forUser(loggedUsername);
+    public ClienteView(String username, String cfPrenotante, String propertiesFile) {
+        this.username = username;
+        this.cfPrenotante = cfPrenotante;
+        this.controller = new ClienteController(propertiesFile);
     }
 
     public void show() {
-        boolean back = false;
-        while (!back) {
-            System.out.println("\n-- Menu Cliente --");
-            System.out.println("1) Effettua prenotazione");
-            System.out.println("2) I miei biglietti (per CF viaggiatore)");
-            System.out.println("3) Indietro");
+        System.out.println("Benvenuto nell'area Clienti, " + username + " (CF " + cfPrenotante + ")");
+
+        boolean loop = true;
+        while (loop) {
+            System.out.println("\n== Area Cliente ==");
+            System.out.println("1) Elenco tratte");
+            System.out.println("2) Dettaglio fermate di una tratta");
+            System.out.println("3) Cerca posti liberi e prenota");
+            System.out.println("4) Le mie prenotazioni");
+            System.out.println("5) Indietro");
             System.out.print("Scelta: ");
             String s = in.nextLine();
 
             switch (s) {
-                case "1":
-                    nuovaPrenotazione();
-                    break;
-                case "2":
-                    miePrenotazioni();
-                    break;
-                case "3":
-                    back = true;
-                    break;
-                default:
-                    System.out.println("Scelta non valida.");
+                case "1": elencoTratte(); break;
+                case "2": dettaglioFermate(); break;
+                case "3": cercaPostiEPrenota(); break;
+                case "4": miePrenotazioni(); break;
+                case "5": loop = false; break;
+                default:  System.out.println("Scelta non valida.");
             }
         }
     }
 
-    private void nuovaPrenotazione() {
+    private void elencoTratte() {
         try {
-            // 1) Selezione tratta
-            List<Tratta> tratte = ctrl.listTratte();
+            List<Tratta> tratte = controller.elencoTratte();
             if (tratte.isEmpty()) {
                 System.out.println("Nessuna tratta disponibile.");
                 return;
             }
+            System.out.println("\nID | Partenza -> Arrivo | Orari | Treni operativi");
+            for (Tratta t : tratte) {
+                System.out.printf("%d | %s/%s/%s -> %s/%s/%s | %s-%s | %d%n",
+                        t.getIdTratta(),
+                        t.getNomePart(), t.getCittaPart(), t.getProvPart(),
+                        t.getNomeArr(), t.getCittaArr(), t.getProvArr(),
+                        t.getOrarioPartenza(), t.getOrarioArrivo(),
+                        t.getNumTreniOperativi());
+            }
+        } catch (DAOException e) {
+            System.out.println("Errore: " + e.getMessage());
+        }
+    }
+
+    private void dettaglioFermate() {
+        try {
+            List<Tratta> tratte = controller.elencoTratte();
+            if (tratte.isEmpty()) {
+                System.out.println("Nessuna tratta disponibile.");
+                return;
+            }
+            System.out.println("\nSeleziona una TRATTA per vedere le fermate:");
             for (int i = 0; i < tratte.size(); i++) {
-                System.out.println((i + 1) + ") " + tratte.get(i));
+                Tratta t = tratte.get(i);
+                System.out.printf("%2d) ID %d  %s/%s/%s -> %s/%s/%s  %s-%s%n",
+                        i + 1, t.getIdTratta(),
+                        t.getNomePart(), t.getCittaPart(), t.getProvPart(),
+                        t.getNomeArr(), t.getCittaArr(), t.getProvArr(),
+                        t.getOrarioPartenza(), t.getOrarioArrivo());
             }
-            System.out.print("Seleziona tratta: ");
-            Tratta tratta = tratte.get(Integer.parseInt(in.nextLine()) - 1);
+            int idxTratta = readIntInRange("Scelta: ", 1, tratte.size()) - 1;
+            Tratta sceltaTratta = tratte.get(idxTratta);
 
-            // 2) Selezione treno che copre la tratta
-            List<Treno> treni = ctrl.listTreniByTratta(tratta);
+            List<Fermata> fermate = controller.fermateTratta(sceltaTratta.getIdTratta());
+            if (fermate.isEmpty()) {
+                System.out.println("Nessuna fermata per la tratta " + sceltaTratta.getIdTratta());
+                return;
+            }
+
+            System.out.println("\nFermate per tratta ID " + sceltaTratta.getIdTratta() + " (ordine di percorrenza):");
+            for (Fermata f : fermate) {
+                System.out.printf("%2d) %s, %s (%s)  arr:%s  part:%s%n",
+                        f.getProgressivo(), f.getNome(), f.getCitta(), f.getProvincia(),
+                        f.getOrarioArrPrev(), f.getOrarioPartPrev());
+            }
+        } catch (DAOException e) {
+            System.out.println("Errore: " + e.getMessage());
+        }
+    }
+
+    private void cercaPostiEPrenota() {
+        try {
+            List<Tratta> tratte = controller.elencoTratte();
+            if (tratte.isEmpty()) {
+                System.out.println("Nessuna tratta disponibile.");
+                return;
+            }
+            System.out.println("\nSeleziona una TRATTA:");
+            for (int i = 0; i < tratte.size(); i++) {
+                Tratta t = tratte.get(i);
+                System.out.printf("%2d) ID %d  %s/%s/%s -> %s/%s/%s  %s-%s%n",
+                        i + 1, t.getIdTratta(),
+                        t.getNomePart(), t.getCittaPart(), t.getProvPart(),
+                        t.getNomeArr(), t.getCittaArr(), t.getProvArr(),
+                        t.getOrarioPartenza(), t.getOrarioArrivo());
+            }
+            int idxTratta = readIntInRange("Scelta: ", 1, tratte.size()) - 1;
+            Tratta sceltaTratta = tratte.get(idxTratta);
+
+            List<Treno> treni = controller.treniSuTratta(sceltaTratta.getIdTratta());
             if (treni.isEmpty()) {
-                System.out.println("Nessun treno per la tratta selezionata.");
+                System.out.println("Nessun treno assegnato alla tratta selezionata.");
                 return;
             }
+            System.out.println("\nSeleziona un TRENO sulla tratta scelta:");
             for (int i = 0; i < treni.size(); i++) {
-                System.out.println((i + 1) + ") " + treni.get(i));
+                Treno t = treni.get(i);
+                System.out.printf("%2d) %s  (%s/%s/%s -> %s/%s/%s)%n",
+                        i + 1, t.getMatricola(),
+                        t.getNomePart(), t.getCittaPart(), t.getProvPart(),
+                        t.getNomeArr(), t.getCittaArr(), t.getProvArr());
             }
-            System.out.print("Seleziona treno: ");
-            Treno treno = treni.get(Integer.parseInt(in.nextLine()) - 1);
+            int idxTreno = readIntInRange("Scelta: ", 1, treni.size()) - 1;
+            Treno sceltaTreno = treni.get(idxTreno);
 
-            // 3) Data viaggio
-            System.out.print("Data viaggio (YYYY-MM-DD): ");
-            LocalDate dataViaggio = LocalDate.parse(in.nextLine());
-
-            // 4) Classe -> elenco carrozze di quella classe
-            System.out.print("Classe (PRIMA/SECONDA oppure 1A/2A): ");
-            String clIn = in.nextLine().trim().toUpperCase();
-            Classe.NomeClasse nomeClasse = parseClasse(clIn);
-
-            List<Integer> vagoni = ctrl.listVagoni(treno.getIdTreno(), nomeClasse.name());
-            if (vagoni.isEmpty()) {
-                System.out.println("Nessuna carrozza disponibile per quella classe.");
+            List<Carrozza> carrozze = controller.carrozzeDelTreno(sceltaTreno.getMatricola());
+            if (carrozze.isEmpty()) {
+                System.out.println("Nessuna carrozza per il treno selezionato.");
                 return;
             }
-            for (int i = 0; i < vagoni.size(); i++) {
-                System.out.println((i + 1) + ") Carrozza " + vagoni.get(i));
+            System.out.println("\nSeleziona una CARROZZA del treno " + sceltaTreno.getMatricola() + ":");
+            for (int i = 0; i < carrozze.size(); i++) {
+                Carrozza c = carrozze.get(i);
+                int posti = controller.postiInCarrozza(sceltaTreno.getMatricola(), c.getIdComponente());
+                System.out.printf("%2d) comp:%d  n.%d  classe:%s  %s %s  (posti:%d)%n",
+                        i + 1, c.getIdComponente(), c.getNumero(), c.getClasse(), c.getMarca(), c.getModello(), posti);
             }
-            System.out.print("Seleziona carrozza: ");
-            int nCarrozza = vagoni.get(Integer.parseInt(in.nextLine()) - 1);
+            int idxCarrozza = readIntInRange("Scelta: ", 1, carrozze.size()) - 1;
+            Carrozza sceltaCarrozza = carrozze.get(idxCarrozza);
 
-            // 5) Posti liberi nella carrozza/classe/giorno
-            List<String> posti = ctrl.listPostiLiberi(treno.getIdTreno(), nCarrozza, nomeClasse.name(), dataViaggio);
-            if (posti.isEmpty()) {
-                System.out.println("Nessun posto libero per i criteri selezionati.");
+            LocalDate dataViaggio = readDate("Data viaggio (YYYY-MM-DD): ");
+
+            List<Integer> liberi = controller.postiLiberi(
+                    sceltaTreno.getMatricola(),
+                    sceltaCarrozza.getIdComponente(),
+                    dataViaggio
+            );
+            if (liberi.isEmpty()) {
+                System.out.println("Nessun posto libero in quella carrozza per la data indicata.");
                 return;
             }
-            for (int i = 0; i < posti.size(); i++) {
-                System.out.println((i + 1) + ") Posto " + posti.get(i));
+
+            System.out.println("\nSeleziona un POSTO libero:");
+            for (int i = 0; i < liberi.size(); i++) {
+                System.out.printf("%2d) posto %d%n", i + 1, liberi.get(i));
             }
-            System.out.print("Seleziona posto: ");
-            String nPosto = posti.get(Integer.parseInt(in.nextLine()) - 1);
+            int idxPosto = readIntInRange("Scelta: ", 1, liberi.size()) - 1;
+            int numeroPosto = liberi.get(idxPosto);
 
-            // 6) Dati VIAGGIATORE (intestatario biglietto)
-            System.out.print("Codice fiscale VIAGGIATORE: ");
-            String cfViaggiatore = in.nextLine().trim().toUpperCase();
-            System.out.print("Nome VIAGGIATORE: ");
-            String nomeViagg = in.nextLine().trim();
-            System.out.print("Cognome VIAGGIATORE: ");
-            String cognomeViagg = in.nextLine().trim();
-            System.out.print("Data di nascita VIAGGIATORE (YYYY-MM-DD): ");
-            LocalDate dnViagg = LocalDate.parse(in.nextLine());
-
-            // 7) Dati ACQUIRENTE: CF automatico dallo username loggato; chiedi solo carta
-            String cfAcq = ctrl.getCfAcquirente();
-            if (cfAcq == null || cfAcq.isBlank()) {
-                System.out.println("Impossibile procedere: nessun CF collegato al tuo account.");
+            String cfPasseggero = readString("CF passeggero (16): ");
+            if (cfPasseggero.length() != 16) {
+                System.out.println("CF non valido.");
                 return;
             }
-            System.out.print("Carta di credito (16 cifre, solo numeri): ");
-            String carta = in.nextLine().replaceAll("\\s+", "");
+            String nomeP = readString("Nome passeggero: ");
+            String cognomeP = readString("Cognome passeggero: ");
+            LocalDate dataNascita = readDate("Data nascita (YYYY-MM-DD): ");
+            String cc = readString("Carta di credito (anche con spazi/punti): ");
 
-            // Conferma
-            System.out.print("Confermi? (s/n): ");
-            if (!in.nextLine().equalsIgnoreCase("s")) return;
+            System.out.println("\nConferma prenotazione:");
+            System.out.printf("Tratta ID %d  %s/%s/%s -> %s/%s/%s  Data: %s%n",
+                    sceltaTratta.getIdTratta(),
+                    sceltaTratta.getNomePart(), sceltaTratta.getCittaPart(), sceltaTratta.getProvPart(),
+                    sceltaTratta.getNomeArr(), sceltaTratta.getCittaArr(), sceltaTratta.getProvArr(),
+                    dataViaggio);
+            System.out.printf("Treno %s  Carrozza comp:%d  Classe:%s  Posto:%d%n",
+                    sceltaTreno.getMatricola(), sceltaCarrozza.getIdComponente(), sceltaCarrozza.getClasse(), numeroPosto);
 
-            // 8) Build richiesta coerente con DB/procedure
-            Prenotazione richiesta = new Prenotazione.Builder()
-                    .withDataViaggio(dataViaggio)
-                    .withIdTreno(treno.getIdTreno())
-                    .withMarca(treno.getMarca())
-                    .withModello(treno.getModello())
-                    .withNCarrozza(nCarrozza)
-                    .withNumeroPosto(nPosto)
-                    .withDepNomeStazione(tratta.getDepNomeStazione())
-                    .withArrNomeStazione(tratta.getArrNomeStazione())
-                    .withCfViaggiatore(cfViaggiatore)
-                    .withNomeViaggiatore(nomeViagg)
-                    .withCognomeViaggiatore(cognomeViagg)
-                    .withDataNascitaViaggiatore(dnViagg)
-                    .withCfAcquirente(cfAcq)          // auto dal login
-                    .withCartaCredito(carta)
-                    .build();
+            controller.prenota(
+                    cfPasseggero, nomeP, cognomeP, dataNascita,
+                    cc, dataViaggio, cfPrenotante,
+                    sceltaTratta.getIdTratta(),
+                    sceltaTreno.getMatricola(),
+                    sceltaCarrozza.getIdComponente(),
+                    numeroPosto
+            );
 
-            // 9) Insert + lettura classe/prezzo calcolati lato DB
-            Prenotazione confermata = ctrl.creaPrenotazione(richiesta);
+            System.out.println("Prenotazione effettuata con successo.");
 
-            System.out.println("\nPrenotazione effettuata!");
-            System.out.println("Classe: " + confermata.getNomeClasse());
-            System.out.println("Prezzo: €" + confermata.getPrezzo());
-
-        } catch (IllegalArgumentException e) {
-            System.out.println("Input non valido: " + e.getMessage());
         } catch (DAOException e) {
             System.out.println("Errore prenotazione: " + e.getMessage());
         }
     }
 
     private void miePrenotazioni() {
-        System.out.print("Codice fiscale VIAGGIATORE: ");
-        String cf = in.nextLine().trim().toUpperCase();
         try {
-            List<Prenotazione> list = ctrl.getPrenotazioniCliente(cf);
+            List<SintesiPrenotazione> list = controller.prenotazioniCliente(cfPrenotante);
             if (list.isEmpty()) {
                 System.out.println("Nessuna prenotazione trovata.");
-            } else {
-                list.forEach(p -> System.out.println(
-                        p.getCodicePrenotazione() + " | " + p.getDataViaggio() + " | " +
-                                p.getDepNomeStazione() + " → " + p.getArrNomeStazione() + " | " +
-                                "Carrozza " + p.getNCarrozza() + " Posto " + p.getNumeroPosto() + " | " +
-                                p.getNomeClasse() + " | €" + p.getPrezzo()
-                ));
+                return;
             }
-        } catch (IllegalArgumentException e) {
-            System.out.println("Input non valido: " + e.getMessage());
+            System.out.println("\nPrenotazioni di " + username + " (CF " + cfPrenotante + "):");
+            for (SintesiPrenotazione p : list) {
+                System.out.printf("#%d  %s  treno:%s  tratta:%d  %s -> %s  classe:%s  carrozza:%d  posto:%d  pax:%s %s (CF %s)  CC:****%s%n",
+                        p.idPrenotazione, p.dataViaggio, p.idTreno, p.idTratta,
+                        p.partenza, p.arrivo, p.classe, p.idComponente, p.numeroPosto,
+                        p.nomePasseggero, p.cognomePasseggero, p.cfPasseggero, p.ccLast4);
+            }
         } catch (DAOException e) {
-            System.out.println("Errore recupero prenotazioni: " + e.getMessage());
+            System.out.println("Errore: " + e.getMessage());
         }
     }
 
-    private Classe.NomeClasse parseClasse(String raw) {
-        switch (raw) {
-            case "1A": return Classe.NomeClasse.PRIMA;
-            case "2A": return Classe.NomeClasse.SECONDA;
-            default:   return Classe.NomeClasse.valueOf(raw);
+    private int readInt(String prompt) {
+        while (true) {
+            System.out.print(prompt);
+            String s = in.nextLine();
+            try { return Integer.parseInt(s.trim()); }
+            catch (NumberFormatException e) { System.out.println("Numero non valido."); }
+        }
+    }
+
+    private int readIntInRange(String prompt, int min, int max) {
+        while (true) {
+            int val = readInt(prompt);
+            if (val >= min && val <= max) return val;
+            System.out.printf("Inserisci un numero tra %d e %d.%n", min, max);
+        }
+    }
+
+    private String readString(String prompt) {
+        System.out.print(prompt);
+        return in.nextLine().trim();
+    }
+
+    private LocalDate readDate(String prompt) {
+        while (true) {
+            System.out.print(prompt);
+            String s = in.nextLine().trim();
+            try { return LocalDate.parse(s); }
+            catch (DateTimeParseException e) { System.out.println("Data non valida. Formato atteso YYYY-MM-DD."); }
         }
     }
 }

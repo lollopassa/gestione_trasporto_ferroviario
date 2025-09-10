@@ -3,45 +3,45 @@ package domain;
 import java.util.Objects;
 
 public class Personale {
+    private String cf;
+    private String nome;
+    private String cognome;
+    private String tipo;
 
-    public enum TipoPersonale { MACCHINISTA, CAPOTRENO }
 
-    private final String cf;           // CHAR(16)
-    private final TipoPersonale tipo;  // ENUM
-    private final String username;     // VARCHAR(20)
-    private final String idTreno;      // CHAR(4)
-    private final String marca;        // VARCHAR(30)
-    private final String modello;      // VARCHAR(30)
-
-    public Personale(String cf, TipoPersonale tipo, String username,
-                     String idTreno, String marca, String modello) {
+    public Personale(String cf, String nome, String cognome, String tipo) {
         this.cf = cf;
+        this.nome = nome;
+        this.cognome = cognome;
         this.tipo = tipo;
-        this.username = username;
-        this.idTreno = idTreno;
-        this.marca = marca;
-        this.modello = modello;
     }
 
     public String getCf() { return cf; }
-    public TipoPersonale getTipo() { return tipo; }
-    public String getUsername() { return username; }
-    public String getIdTreno() { return idTreno; }
-    public String getMarca() { return marca; }
-    public String getModello() { return modello; }
+    public void setCf(String cf) { this.cf = cf; }
+    public String getNome() { return nome; }
+    public void setNome(String nome) { this.nome = nome; }
+    public String getCognome() { return cognome; }
+    public void setCognome(String cognome) { this.cognome = cognome; }
+    public String getTipo() { return tipo; }
+    public void setTipo(String tipo) { this.tipo = tipo; }
 
     @Override public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof Personale)) return false;
-        Personale p = (Personale) o;
-        return Objects.equals(cf, p.cf) &&
-                Objects.equals(idTreno, p.idTreno) &&
-                Objects.equals(marca, p.marca) &&
-                Objects.equals(modello, p.modello);
+        Personale that = (Personale) o;
+        return Objects.equals(cf, that.cf);
     }
-    @Override public int hashCode() { return Objects.hash(cf, idTreno, marca, modello); }
+
+    @Override public int hashCode() {
+        return Objects.hash(cf);
+    }
+
     @Override public String toString() {
-        return "Personale{cf='" + cf + "', tipo=" + tipo + ", user='" + username + "', treno=" +
-                idTreno + " " + marca + " " + modello + "}";
+        return "personale{" +
+                "cf='" + cf + '\'' +
+                ", nome='" + nome + '\'' +
+                ", cognome='" + cognome + '\'' +
+                ", tipo='" + tipo + '\'' +
+                '}';
     }
 }

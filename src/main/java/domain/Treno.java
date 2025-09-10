@@ -1,61 +1,67 @@
 package domain;
 
-import java.time.LocalDate;
-import java.time.LocalTime;
 import java.util.Objects;
 
 public class Treno {
-    private final String idTreno;             // CHAR(4)
-    private final String marca;               // VARCHAR(30)
-    private final String modello;             // VARCHAR(30)
-    private final LocalDate dataAcquisto;     // DATE
-    private final LocalTime orarioPartenza;   // TIME
-    private final LocalTime orarioArrivo;     // TIME
-    private final String depNomeStaz;         // VARCHAR(50)
-    private final String arrNomeStaz;         // VARCHAR(50)
+    private String matricola;
+    private Integer idTratta;
+    private String nomePart;
+    private String cittaPart;
+    private String provPart;
+    private String nomeArr;
+    private String cittaArr;
+    private String provArr;
 
-    // Costruttore "light" usato da getAllTreni()
-    public Treno(String idTreno, String marca, String modello) {
-        this(idTreno, marca, modello, null, null, null, null, null);
+
+    public Treno(String matricola, Integer idTratta, String nomePart, String cittaPart, String provPart, String nomeArr, String cittaArr, String provArr) {
+        this.matricola = matricola;
+        this.idTratta = idTratta;
+        this.nomePart = nomePart;
+        this.cittaPart = cittaPart;
+        this.provPart = provPart;
+        this.nomeArr = nomeArr;
+        this.cittaArr = cittaArr;
+        this.provArr = provArr;
     }
 
-    // Costruttore "full"
-    public Treno(String idTreno, String marca, String modello,
-                 LocalDate dataAcquisto,
-                 LocalTime orarioPartenza,
-                 LocalTime orarioArrivo,
-                 String depNomeStaz,
-                 String arrNomeStaz) {
-        this.idTreno = idTreno;
-        this.marca = marca;
-        this.modello = modello;
-        this.dataAcquisto = dataAcquisto;
-        this.orarioPartenza = orarioPartenza;
-        this.orarioArrivo = orarioArrivo;
-        this.depNomeStaz = depNomeStaz;
-        this.arrNomeStaz = arrNomeStaz;
-    }
-
-    public String getIdTreno() { return idTreno; }
-    public String getMarca() { return marca; }
-    public String getModello() { return modello; }
-    public LocalDate getDataAcquisto() { return dataAcquisto; }
-    public LocalTime getOrarioPartenza() { return orarioPartenza; }
-    public LocalTime getOrarioArrivo() { return orarioArrivo; }
-    public String getDepNomeStaz() { return depNomeStaz; }
-    public String getArrNomeStaz() { return arrNomeStaz; }
+    public String getMatricola() { return matricola; }
+    public void setMatricola(String matricola) { this.matricola = matricola; }
+    public Integer getIdTratta() { return idTratta; }
+    public void setIdTratta(Integer idTratta) { this.idTratta = idTratta; }
+    public String getNomePart() { return nomePart; }
+    public void setNomePart(String nomePart) { this.nomePart = nomePart; }
+    public String getCittaPart() { return cittaPart; }
+    public void setCittaPart(String cittaPart) { this.cittaPart = cittaPart; }
+    public String getProvPart() { return provPart; }
+    public void setProvPart(String provPart) { this.provPart = provPart; }
+    public String getNomeArr() { return nomeArr; }
+    public void setNomeArr(String nomeArr) { this.nomeArr = nomeArr; }
+    public String getCittaArr() { return cittaArr; }
+    public void setCittaArr(String cittaArr) { this.cittaArr = cittaArr; }
+    public String getProvArr() { return provArr; }
+    public void setProvArr(String provArr) { this.provArr = provArr; }
 
     @Override public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof Treno)) return false;
-        Treno t = (Treno) o;
-        return Objects.equals(idTreno, t.idTreno) &&
-                Objects.equals(marca, t.marca) &&
-                Objects.equals(modello, t.modello);
+        Treno treno = (Treno) o;
+        return Objects.equals(matricola, treno.matricola);
     }
-    @Override public int hashCode() { return Objects.hash(idTreno, marca, modello); }
+
+    @Override public int hashCode() {
+        return Objects.hash(matricola);
+    }
+
     @Override public String toString() {
-        return "Treno{" + idTreno + ", " + marca + " " + modello +
-                (depNomeStaz != null ? ", " + depNomeStaz + "→" + arrNomeStaz : "") + "}";
+        return "treno{" +
+                "matricola='" + matricola + '\'' +
+                ", idTratta=" + idTratta +
+                ", nomePart='" + nomePart + '\'' +
+                ", cittaPart='" + cittaPart + '\'' +
+                ", provPart='" + provPart + '\'' +
+                ", nomeArr='" + nomeArr + '\'' +
+                ", cittaArr='" + cittaArr + '\'' +
+                ", provArr='" + provArr + '\'' +
+                '}';
     }
 }

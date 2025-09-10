@@ -1,126 +1,56 @@
 package controller;
 
-import dao.PersonaleDAO;
-import dao.RegistroDAO;
-import dao.TurnoDAO;
-import domain.Turno;
+import dao.PersonaleDao;
+import dao.PersonaleDao.ReportSettimanale;
+import domain.Locomotiva;
+import domain.Carrozza;
+import domain.Treno;
+import domain.Personale;
 import exception.DAOException;
 
+import java.sql.SQLException;
 import java.time.LocalDate;
-import java.time.YearMonth;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Objects;
 
 public class PersonaleController {
-    private final TurnoDAO turnoDAO = new TurnoDAO();
-    private final RegistroDAO registroDAO = new RegistroDAO();
+    private final PersonaleDao dao;
 
-    private final String cfPersonale;
-
-    /** Factory: risolve il CF del personale a partire dallo username loggato. */
-    public static PersonaleController forUser(String loggedUsername) throws DAOException {
-        if (loggedUsername == null || loggedUsername.isBlank()) {
-            throw new IllegalArgumentException("Username loggato mancante.");
-        }
-        String cf = PersonaleDAO.findCfByUsername(loggedUsername);
-        if (cf == null || cf.isBlank()) {
-            throw new DAOException("Account personale non collegato a un CF. Registra/collega lo username in tabella personale.");
-        }
-        return new PersonaleController(cf);
+    public PersonaleController(String propertiesFile) {
+        this.dao = new PersonaleDao(propertiesFile);
     }
 
-    /** Costruttore esplicito con CF già risolto. */
-    public PersonaleController(String cfPersonale) {
-        this.cfPersonale = Objects.requireNonNull(cfPersonale, "CF personale mancante");
+    public List<Treno> elencoTreni() throws DAOException {
+        try { return dao.listTreni(); }
+        catch (SQLException e) { throw new DAOException("Errore lettura treni", e); }
     }
 
-    public String getCfPersonale() { return cfPersonale; }
-
-    /* ========================
-       Pianificazione MENSILE
-       ======================== */
-
-    /** Lista turni dell'intero mese (base mensile di pianificazione). */
-    public List<Turno> getPianificazioneMensile(YearMonth ym) throws DAOException {
-        if (ym == null) throw new IllegalArgumentException("Mese mancante.");
-        LocalDate from = ym.atDay(1);
-        LocalDate to   = ym.atEndOfMonth();
-        return turnoDAO.getStoricoTurni(cfPersonale, from, to);
+    public List<Carrozza> carrozzeTreno(String idTreno) throws DAOException {
+        try { return dao.listCarrozzeByTreno(idTreno); }
+        catch (SQLException e) { throw new DAOException("Errore lettura carrozze", e); }
     }
 
-    /** Rende una stampa leggibile della pianificazione mensile. */
-    public String stampaPianificazioneMensile(YearMonth ym) throws DAOException {
-        List<Turno> turni = getPianificazioneMensile(ym);
-        DateTimeFormatter df = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-        StringBuilder sb = new StringBuilder()
-                .append("\n== Pianificazione mensile (")
-                .append(ym).append(") ==\n");
-
-        if (turni.isEmpty()) {
-            sb.append("Nessun turno nel mese.\n");
-            return sb.toString();
-        }
-
-        for (Turno t : turni) {
-            sb.append(String.format(
-                    "%s | %s-%s | Treno %s (%s %s)",
-                    df.format(t.getDataServ()),
-                    t.getOraInizio(),
-                    t.getOraFine(),
-                    t.getIdTreno(),
-                    t.getMarca(),
-                    t.getModello()
-            )).append('\n');
-        }
-        return sb.toString();
+    public List<ReportSettimanale> reportSettimanale(String cf, LocalDate dataInizio) throws DAOException {
+        try { return dao.reportSettimanale(cf, dataInizio); }
+        catch (SQLException e) { throw new DAOException("Errore report settimanale", e); }
     }
 
-    /* ========================
-       Report SETTIMANALE
-       ======================== */
-
-    /** Turni nella settimana [refDate, refDate+6] per il personale loggato. */
-    public List<Turno> getTurniSettimanali(LocalDate refDate) throws DAOException {
-        if (refDate == null) throw new IllegalArgumentException("Data di riferimento mancante.");
-        return turnoDAO.getTurniSettimanali(cfPersonale, refDate);
+    public List<Locomotiva> locomotiveTreno(String idTreno) throws DAOException {
+        try { return dao.listLocomotiveByTreno(idTreno); }
+        catch (SQLException e) { throw new DAOException("Errore lettura locomotive", e); }
     }
 
-    /** Report settimanale: orari e ID Treno sui quali ha prestato servizio. */
-    public String generaReportSettimanale(LocalDate refDate) throws DAOException {
-        List<Turno> turni = getTurniSettimanali(refDate);
-        LocalDate to = refDate.plusDays(6);
-        DateTimeFormatter df = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-        StringBuilder sb = new StringBuilder()
-                .append("\n== Report settimanale (")
-                .append(df.format(refDate)).append(" → ").append(df.format(to)).append(") ==\n");
-
-        if (turni.isEmpty()) {
-            sb.append("Nessun turno in questa settimana.\n");
-            return sb.toString();
-        }
-
-        for (Turno t : turni) {
-            sb.append(String.format(
-                    "%s | %s-%s | Treno %s",
-                    df.format(t.getDataServ()),
-                    t.getOraInizio(),
-                    t.getOraFine(),
-                    t.getIdTreno()
-            )).append('\n');
-        }
-        return sb.toString();
+    public int appendManutenzioneLocomotiva(int idComponente, String idTreno, String testo) throws DAOException {
+        try { return dao.appendManutenzioneLocomotiva(idComponente, idTreno, testo); }
+        catch (SQLException e) { throw new DAOException("Errore aggiornamento manutenzione locomotiva", e); }
     }
 
-    /* ========================
-       Registro
-       ======================== */
+    public int appendManutenzioneCarrozza(int idComponente, String idTreno, String classe, String testo) throws DAOException {
+        try { return dao.appendManutenzioneCarrozza(idComponente, idTreno, classe, testo); }
+        catch (SQLException e) { throw new DAOException("Errore aggiornamento manutenzione carrozza", e); }
+    }
 
-    /** Segnala un evento a registro per il personale loggato. */
-    public void segnalaRegistro(String idTreno, java.time.LocalDateTime dataEvento, String descrizione) throws DAOException {
-        if (idTreno == null || idTreno.isBlank()) throw new IllegalArgumentException("idTreno mancante.");
-        if (dataEvento == null) throw new IllegalArgumentException("Data evento mancante.");
-        if (descrizione == null || descrizione.isBlank()) throw new IllegalArgumentException("Descrizione mancante.");
-        registroDAO.segnalaEvento(cfPersonale, idTreno, dataEvento, descrizione);
+    public Personale dettaglioPersonale(String cf) throws DAOException {
+        try { return dao.getPersonale(cf); }
+        catch (SQLException e) { throw new DAOException("Errore lettura personale", e); }
     }
 }

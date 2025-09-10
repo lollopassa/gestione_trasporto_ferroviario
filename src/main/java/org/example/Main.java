@@ -11,10 +11,8 @@ import view.MainView;
 public class Main {
 
     public static void main(String[] args) {
-        // Avvio event scheduler (se previsto dal tuo DB)
         Scheduler.attivaEventSchedulerComeRoot();
 
-        // Verifica connessione al DB
         try (Connection c = DBConnection.getConnection("loginuser.properties")) {
             if (c.isValid(1)) {
                 System.out.println("Connessione riuscita al database!");
