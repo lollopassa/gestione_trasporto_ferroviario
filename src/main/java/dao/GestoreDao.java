@@ -1,5 +1,6 @@
 package dao;
 
+import domain.Stazione;
 import domain.Tratta;
 import domain.Treno;
 import utility.DBConnection;
@@ -53,6 +54,13 @@ public class GestoreDao {
                 rs.getString("provArr"),
                 rs.getTime("orarioPartenza").toLocalTime(),
                 rs.getTime("orarioArrivo").toLocalTime()
+        );
+    }
+    private Stazione mapStazione(ResultSet rs) throws SQLException {
+        return new Stazione(
+                rs.getString("nome"),
+                rs.getString("citta"),
+                rs.getString("provincia")
         );
     }
 
@@ -124,9 +132,20 @@ public class GestoreDao {
         return out;
     }
 
+    public List<Stazione> listStazioni() throws SQLException {
+        List<Stazione> out = new ArrayList<>();
+        String sql = "SELECT nome, citta, provincia FROM stazione ORDER BY citta, nome, provincia";
+        try (Connection c = DBConnection.getConnection(props);
+             PreparedStatement ps = c.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) out.add(mapStazione(rs));
+        }
+        return out;
+    }
+
     public EsitoMese programmaMeseTreno(String idTreno, YearMonth mese,
-                                        String cfMacchinista, java.time.LocalTime mInizio, java.time.LocalTime mFine,
-                                        String cfCapotreno, java.time.LocalTime cInizio, java.time.LocalTime cFine) throws SQLException {
+                                        String cfMacchinista, LocalTime mInizio, LocalTime mFine,
+                                        String cfCapotreno, LocalTime cInizio, LocalTime cFine) throws SQLException {
         EsitoMese esito = new EsitoMese();
         try (Connection conn = DBConnection.getConnection(props)) {
             conn.setAutoCommit(true);
@@ -271,6 +290,26 @@ public class GestoreDao {
             cs.setString(1, nome);
             cs.setString(2, citta);
             cs.setString(3, prov);
+            cs.execute();
+        }
+    }
+
+    public void creaTratta(int idTratta, int numTreniOperativi,
+                           String nomePart, String cittaPart, String provPart,
+                           String nomeArr, String cittaArr, String provArr,
+                           LocalTime orarioPartenza, LocalTime orarioArrivo) throws SQLException {
+        try (Connection c = DBConnection.getConnection(props);
+             CallableStatement cs = c.prepareCall("{CALL sp_crea_tratta(?,?,?,?,?,?,?,?,?,?)}")) {
+            cs.setInt(1, idTratta);
+            cs.setInt(2, numTreniOperativi);
+            cs.setString(3, nomePart);
+            cs.setString(4, cittaPart);
+            cs.setString(5, provPart);
+            cs.setString(6, nomeArr);
+            cs.setString(7, cittaArr);
+            cs.setString(8, provArr);
+            cs.setTime(9, Time.valueOf(orarioPartenza));
+            cs.setTime(10, Time.valueOf(orarioArrivo));
             cs.execute();
         }
     }

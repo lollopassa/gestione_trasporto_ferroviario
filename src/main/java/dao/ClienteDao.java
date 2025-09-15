@@ -228,7 +228,6 @@ public class ClienteDao {
         return out;
     }
 
-
     public List<Prenotazione> prenotazioniPerPrenotanteRaw(String cfPrenotante) throws SQLException {
         List<Prenotazione> out = new ArrayList<>();
         String sql =

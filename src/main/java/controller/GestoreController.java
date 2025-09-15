@@ -3,6 +3,7 @@ package controller;
 import dao.GestoreDao;
 import dao.GestoreDao.EsitoMese;
 import dao.GestoreDao.PersonaleLight;
+import domain.Stazione;
 import domain.Tratta;
 import domain.Treno;
 import exception.DAOException;
@@ -34,6 +35,10 @@ public class GestoreController {
     public List<Treno> treniByTratta(int idTratta) throws DAOException {
         try { return dao.listTreniByTratta(idTratta); }
         catch (SQLException e) { throw new DAOException("Errore lettura treni su tratta", e); }
+    }
+    public List<Stazione> elencoStazioni() throws DAOException {
+        try { return dao.listStazioni(); }
+        catch (SQLException e) { throw new DAOException("Errore lettura stazioni", e); }
     }
 
     public EsitoMese programmaMeseTreno(String idTreno, YearMonth mese,
@@ -72,7 +77,7 @@ public class GestoreController {
     }
 
     public void aggiungiFermata(int idTratta, String nome, String citta, String prov,
-                                int progressivo, LocalTime orarioArr, LocalTime orarioPart) throws DAOException {
+                                LocalTime orarioArr, LocalTime orarioPart, int progressivo) throws DAOException {
         try { dao.aggiungiFermata(idTratta, nome, citta, prov, progressivo, orarioArr, orarioPart); }
         catch (SQLException e) { throw new DAOException("Errore aggiunta fermata", e); }
     }
@@ -87,4 +92,17 @@ public class GestoreController {
         catch (SQLException e) { throw new DAOException("Errore lettura treni senza locomotiva", e); }
     }
 
+    public void creaTratta(int idTratta, int numTreniOperativi,
+                           String nomePart, String cittaPart, String provPart,
+                           String nomeArr, String cittaArr, String provArr,
+                           LocalTime orarioPartenza, LocalTime orarioArrivo) throws DAOException {
+        try {
+            dao.creaTratta(idTratta, numTreniOperativi,
+                    nomePart, cittaPart, provPart,
+                    nomeArr, cittaArr, provArr,
+                    orarioPartenza, orarioArrivo);
+        } catch (SQLException e) {
+            throw new DAOException("Errore creazione tratta", e);
+        }
+    }
 }

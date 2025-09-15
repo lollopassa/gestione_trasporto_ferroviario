@@ -3,6 +3,7 @@ package view;
 import controller.GestoreController;
 import dao.GestoreDao.EsitoMese;
 import dao.GestoreDao.PersonaleLight;
+import domain.Stazione;
 import domain.Tratta;
 import domain.Treno;
 import exception.DAOException;
@@ -24,35 +25,82 @@ public class GestoreView {
             System.out.println("\n== Area Gestore ==");
 
             System.out.println("1) Crea STAZIONE");
-            System.out.println("2) Aggiungi FERMATA a una Tratta");
-            System.out.println("3) Aggiorna n. treni operativi per Tratta");
+            System.out.println("2) Crea TRATTA");
+            System.out.println("3) Aggiungi FERMATA a una Tratta");
+            System.out.println("4) Aggiorna n. treni operativi per Tratta");
 
-            System.out.println("4) Crea TRENO");
-            System.out.println("5) Crea LOCOMOTIVA");
-            System.out.println("6) Crea CARROZZA con POSTI");
+            System.out.println("5) Crea TRENO");
+            System.out.println("6) Crea LOCOMOTIVA");
+            System.out.println("7) Crea CARROZZA con POSTI");
 
-            System.out.println("7) Gestisci associazioni dei Treni per Tratta");
-            System.out.println("8) Programma Turno MENSILE (macchinista + capotreno)");
+            System.out.println("8) Gestisci associazioni dei Treni per Tratta");
+            System.out.println("9) Programma Turno MENSILE (macchinista + capotreno)");
 
-            System.out.println("9) Indietro");
+            System.out.println("10) Indietro");
             System.out.print("Scelta: ");
             String s = in.nextLine().trim();
 
             switch (s) {
                 case "1": creaStazioneView(); break;
-                case "2": aggiungiFermataView(); break;
-                case "3": aggiornaNumTreniOperativiView(); break;
-                case "4": creaTrenoView(); break;
-                case "5": creaLocomotivaView(); break;
-                case "6": creaCarrozzaConPostiView(); break;
-                case "7": gestisciAssociazioniTreniTratte(); break;
-                case "8": programmaMeseTreno(); break;
-                case "9": loop = false; break;
+                case "2": creaTrattaView(); break;
+                case "3": aggiungiFermataView(); break;
+                case "4": aggiornaNumTreniOperativiView(); break;
+                case "5": creaTrenoView(); break;
+                case "6": creaLocomotivaView(); break;
+                case "7": creaCarrozzaConPostiView(); break;
+                case "8": gestisciAssociazioniTreniTratte(); break;
+                case "9": programmaMeseTreno(); break;
+                case "10": loop = false; break;
                 default:  System.out.println("Scelta non valida.");
             }
         }
     }
 
+    /* ====================== NUOVO: CREA TRATTA ====================== */
+    private void creaTrattaView() {
+        try {
+            List<Stazione> stazioni = controller.elencoStazioni();
+            if (stazioni.isEmpty()) {
+                System.out.println("Nessuna stazione registrata. Crea almeno due stazioni prima (opzione 1).");
+                return;
+            }
+
+            int idTratta = readInt("ID Tratta (intero): ");
+            int numOp = readInt("Numero treni operativi (>=0): ");
+            if (numOp < 0) { System.out.println("Valore non valido."); return; }
+
+            System.out.println("\n-- Seleziona STAZIONE di PARTENZA --");
+            Stazione part = scegliStazione(stazioni);
+
+            System.out.println("\n-- Seleziona STAZIONE di ARRIVO --");
+            Stazione arr;
+            while (true) {
+                arr = scegliStazione(stazioni);
+                if (!arr.equals(part)) break;
+                System.out.println("Partenza e arrivo non possono coincidere. Seleziona un'altra stazione di ARRIVO.");
+            }
+
+            LocalTime orarioPartenza = readTime("Orario partenza (HH:MM): ");
+            LocalTime orarioArrivo   = readTime("Orario arrivo (HH:MM): ");
+
+            controller.creaTratta(idTratta, numOp,
+                    part.getNome(), part.getCitta(), part.getProvincia(),
+                    arr.getNome(),  arr.getCitta(),  arr.getProvincia(),
+                    orarioPartenza, orarioArrivo);
+
+            System.out.println("Tratta creata con successo.");
+        } catch (DAOException e) {
+            printErr(e, "Errore creazione tratta");
+        }
+    }
+
+    private Stazione scegliStazione(List<Stazione> stazioni) {
+        for (int i=0; i<stazioni.size(); i++) {
+            System.out.printf("  %d) %s%n", i+1, labelStazione(stazioni.get(i)));
+        }
+        int idx = readIndex("Scelta: ", stazioni.size());
+        return stazioni.get(idx);
+    }
 
     private void programmaMeseTreno() {
         try {
@@ -89,7 +137,6 @@ public class GestoreView {
             printErr(e, "Errore programmazione mensile");
         }
     }
-
 
     private void gestisciAssociazioniTreniTratte() {
         try {
@@ -141,7 +188,6 @@ public class GestoreView {
         }
     }
 
-
     private void aggiornaNumTreniOperativiView() {
         try {
             List<Tratta> tratte = controller.elencoTratte();
@@ -192,7 +238,7 @@ public class GestoreView {
             LocalTime arr = readTime("Orario arrivo previsto (HH:MM): ");
             LocalTime part = readTime("Orario partenza prevista (HH:MM): ");
 
-            controller.aggiungiFermata(t.getIdTratta(), nome, citta, prov, progressivo, arr, part);
+            controller.aggiungiFermata(t.getIdTratta(), nome, citta, prov, arr, part, progressivo);
             System.out.println("Fermata aggiunta con successo.");
         } catch (DAOException e) {
             printErr(e, "Errore aggiunta fermata");
@@ -245,7 +291,6 @@ public class GestoreView {
         }
     }
 
-
     private void creaCarrozzaConPostiView() {
         try {
             List<Treno> treni = controller.elencoTreni();
@@ -276,7 +321,6 @@ public class GestoreView {
         }
     }
 
-
     private String labelTreno(Treno t) {
         return t.getMatricola() + "  (" +
                 t.getNomePart()+"/"+t.getCittaPart()+"/"+t.getProvPart() + " -> " +
@@ -287,6 +331,9 @@ public class GestoreView {
                 t.getNomePart()+"/"+t.getCittaPart()+"/"+t.getProvPart() + " -> " +
                 t.getNomeArr()+"/"+t.getCittaArr()+"/"+t.getProvArr() +
                 "  (treni operativi: " + t.getNumTreniOperativi() + ")";
+    }
+    private String labelStazione(Stazione s) {
+        return s.getNome() + " / " + s.getCitta() + " / " + s.getProvincia();
     }
     private String labelPersonale(PersonaleLight p) { return p.cognome + " " + p.nome + " (" + p.cf + ")"; }
 
