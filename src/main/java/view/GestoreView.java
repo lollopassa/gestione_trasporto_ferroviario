@@ -7,7 +7,6 @@ import domain.Stazione;
 import domain.Tratta;
 import domain.Treno;
 import exception.DAOException;
-
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.YearMonth;
@@ -56,7 +55,6 @@ public class GestoreView {
         }
     }
 
-    /* ====================== NUOVO: CREA TRATTA ====================== */
     private void creaTrattaView() {
         try {
             List<Stazione> stazioni = controller.elencoStazioni();
